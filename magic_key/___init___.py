@@ -6,6 +6,9 @@ Examples:
     >>> from .examples.person import Person
 
     >>> merlin = Person("Myrddin Wyllt", 42, "Caledonia") 
+
+
+    >>> # Using the default iPython matching engine
     >>> magic_key.turn_on(merlin, magic_type = None)
     >>> @`merlin.name()`
     Myrddin Wyllt
@@ -14,8 +17,8 @@ Examples:
     Invalid .. .  # TODO add actual error
 
     >>>
-    >>> # Using the string matching engine
-    >>> magic_key.turn_on(merlin, magic_type = True)
+    >>> # Using the default Whoosh sting matching engine
+    >>> magic_key.turn_on(merlin, magic_type = False)
     >>> @merlin What is your first name?
     Myrddin Wyllt
 
@@ -27,7 +30,7 @@ Examples:
     Myrddin Wyllt
 
     >>> @merlin Please, can you remind me, what is your first name?  It's M... ?
-    Merlin, people also call me Merlinus and Myrddin. Please, feel free to call me Merlin. It is easier this way in English.
+    It's Merlin. People also call me Merlinus and Myrddin. Please, feel free to call me Merlin. It is easier this way in English.
 
     >>> magic_key.turn_off(merlin)      # By default, this backs up the episode and consolidates the memory
 """

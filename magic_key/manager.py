@@ -1,15 +1,5 @@
 from queue import Empty
 import jupyter_client
-kernel_manager, kernel_client = jupyter_client.manager.start_new_kernel(kernel_name='python3', startup_timeout=15)
-
-# When I initially tried this, I got a permission error. This was fixed by installing the python3 kernel spec (apparently Jupyter does not do this automatically...):
-# python3 -m ipykernel install --user
-# And then you can get the ports by
-
-print(kernel_manager.get_connection_info())
-
-print("Kernel is alive: {0}".format(kernel_manager.is_alive()))
-
 
 def execute(source):
     message_id = kernel_client.execute(source)
@@ -48,23 +38,38 @@ def execute(source):
         except Empty:
             print('timeout kc.get_iopub_msg')
             break
-    
-execute("%load_ext magic_connector")
-execute("3+3")
-execute("print('Hello World!  #hello')")
-execute("%lmagic")
 
-execute("%unload_ext magic_connector") 
-print('stop channels')
-kernel_client.stop_channels()
 
-kernel_manager.shutdown_kernel(now = True)
+if __name__ == '__main__':
+    kernel_manager, kernel_client = jupyter_client.manager.start_new_kernel(kernel_name='python3', startup_timeout=15)
 
-# So there are several parts to it.  
-# 1. We need to start the kerel and pipe GPT to it.
-# 2. This kernel should have our custom prompt & magics + support normal stuff.  GPT prompt is our kernel prompt
-# 3. This kernal should have pyros in the event loop and space  (based on https://github.com/RoboStack/jupyter-ros ?)
-# 4. When kernel dies, it should bring down ROS node
-# 5. We restart and inform GPT
+    # When I initially tried this, I got a permission error. This was fixed by installing the python3 kernel spec (apparently Jupyter does not do this automatically...):
+    # python3 -m ipykernel install --user
+    # And then you can get the ports by
 
-#
+    print(kernel_manager.get_connection_info())
+
+    print("Kernel is alive: {0}".format(kernel_manager.is_alive()))
+
+
+    text = """
+    %load_ext magics
+    @```python
+    print('Hello World!')
+    ```
+    %unload_ext magics
+    """
+
+    execute(text)
+
+    print('stop channels')
+    kernel_client.stop_channels()
+
+    kernel_manager.shutdown_kernel(now = True)
+
+    # So there are several parts to it.  
+    # 1. We need to start the kerel and pipe GPT to it.
+    # 2. This kernel should have our custom prompt & magics + support normal stuff.  GPT prompt is our kernel prompt
+    # 3. This kernal should have pyros in the event loop and space  (based on https://github.com/RoboStack/jupyter-ros ?)
+    # 4. When kernel dies, it should bring down ROS node
+    # 5. We restart and inform GPT
