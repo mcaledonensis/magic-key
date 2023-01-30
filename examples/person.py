@@ -7,6 +7,9 @@ Examples:
     Jane Doe, 32, 123 Main St.
 """
 
+# TODO: the original sample code was authored based on a prompt, clarify authorship.
+___credits___ = ["Merlinus Caledonensis", "ChatGPT, Jan 9, Free Research Edition"]
+
 class Person:
     def __init__(self, name, age, address):
         self.name = name
