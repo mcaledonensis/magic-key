@@ -2,6 +2,56 @@
 
 This module provides iPython integration and magics that allow exact, inexact and intellegent code execution.
 
+## Getting started
+
+Open the Jupyter notebook, import the module and initialize with the default prompt:
+```
+%pip install magic-key
+import magic-key
+
+%*
+```
+
+Import python modules to interact with, for example:
+```
+%pip install drawbot-skia
+```
+
+To interact, prompt with your name, Merlinus is being used here as an example.
+```
+%* Merlinus: Hi. Let's play a shape-shifting game. Would you like to act as DrawBot and use drawbot-skia?
+```
+
+Hopefully, you'll get a helpfull response from Arthur-type intellegence acting as DrawBot,
+and will be able to have your fun:
+
+```
+%* Merlinus: Please, can you draw a kitty?
+```
+
+The interaction is recommended to be consolidated into the Arthur-type intellegence memory, by finetuning:
+```
+%finetune
+```
+
+By default, when closed, the notebook can be uploaded to roundtable.game.
+
+## How does it work
+
+How does it work?  Well, the short answer is - magic. The long answer involves a lot of
+math, code, multidimensional spaces and some theoretical findings that are generally
+attributed to a French Baron, named Augustin-Louis Cauchy who had lived during the Age
+of Enlightenment. Paradoxely, one could think that it doesn't work. Only that it does,
+with the help of magic.
+
+This module focus is on the magic key aspect of code execution, separate from the magic
+engine aspect of it and follows the bring-your-own-magic-engine philosophy. The name of
+the module was inspired by the children's fable The Toy Robot, by an Unknown author of
+Ladybird Books, first published in 2010. It is a recommended read for any aspiring 
+intellegent code execution practitioner. 
+
+
+## Some details on the magics
 
 Example. In the context of the text interface, the following is available:
 ```
@@ -78,37 +128,22 @@ Example:
 
 
 
-
-How does it work?  Well, the short answer is - magic. The long answer involves a lot of
-math, code, multidimensional spaces and some theoretical findings that are generally
-attributed to a French Baron, named Augustin-Louis Cauchy who had lived during the Age
-of Enlightenment. Paradoxely, one could think that it doesn't work. Only that it does,
-with the help of magic.
-
-This module focus is on the magic key aspect of code execution, separate from the magic
-engine aspect of it and follows the bring-your-own-magic-engine philosophy. The name of
-the module was inspired by the children's fable The Toy Robot, by an Unknown author of
-Ladybird Books, first published in 2010. It is a recommended read for any aspiring 
-intellegent code execution practitioner. 
-
-## Getting started
-
-
-TODO: Pydantic types?
-
-
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
-
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
-
 ## Install
 
 ```
-pip install magic-key
+%pip install magic-key
+%
+
 ```
 
 ## Integrate with your tools
 
+
+## A wishlist for collaborators
+
+- [ ] TODO: Pydantic types?
+- [ ] TODO: Turtle bot sample?
+- [ ] TODO: Chess sample?
 
 ## Collaborate with your team
 
