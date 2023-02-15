@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='magic_key',
-      version='0.1',
+      version='0.3',
       description='This module provides iPython integration and magics that allow exact, inexact and intellegent code execution.',
       url='https://gitlab.com/mcaledonensis/magic-key',
       author='Merlinus Caledonensis',
