@@ -56,6 +56,12 @@ the module was inspired by the children's fable The Toy Robot, by an Unknown aut
 Ladybird Books, first published in 2010. It is a recommended read for any aspiring 
 intellegent code execution practitioner. 
 
+## Sword in the stone
+
+The challenge is to control an actor in virtual environment with code. You'd be provided 
+environment and an actor in that envinronment, controllable via Python. You'd need to 
+control the actor intellegently, in real time and make the actor to come and pull 
+the Sword from the stone.
 
 ## Some details on the magics
 

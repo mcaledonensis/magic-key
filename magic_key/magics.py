@@ -4,7 +4,7 @@
 from __future__ import print_function
 
 import IPython.core.magic
-from IPython.display import display, Javascript
+from IPython.display import display, Javascript, Markdown, Code
 from IPython.core.magic import (Magics, magics_class, line_magic,
                                 cell_magic, line_cell_magic)
 import ast      # AST is also magic, right?
@@ -43,19 +43,37 @@ class TrueMagic(Magics):
     def asterisk(self, line):
         "User prompt"
 
-        response = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=line,
-            temperature=0.6,
-        )
+        #response = openai.Completion.create(
+        #    model="text-davinci-003",
+        #    prompt=line,
+        #    temperature=0.6,
+        #)
 
-        add_response_cell(response.choices[0].text)
+        #add_response_cell(response.choices[0].text)
+
+        #add_response_cell("Hello, world!")
+
         #print("Prompting: ", line)
         #print("Prompting. Full access to the main IPython object:", self.shell)
         #print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
 
+
+        text = """@```"123".split()[0]```"""
+
+        # TODO: remove this
+        display(Markdown(text))
+
+        lines = arthur_to_python(text)
+        add_code_cell("\n".join(lines))
+
         add_prompt_cell()
-        return line    
+        return lines
+
+
+        
+        # make output markdown
+        # https://stackoverflow.com/questions/47818822/can-i-define-a-custom-cell-magic-in-ipython
+
 
 
     @cell_magic
@@ -184,14 +202,14 @@ class Transformer(NodeVisitor):
         return visited_children or node
 
 
-def arthur_to_python(lines):
+def arthur_to_python(text):
     """
         This transforms lines from @```python.code()``` to python.code()
         and from @object Prompt to %prompt object.__prompt__("Prompt").
         This also processes #hastag tags, replacing it with %memory
     """
 
-    tree = grammar.parse("\n".join(lines))
+    tree = arthur_grammar.parse(text)
     visitor = Transformer()
     visitor.visit(tree)
     return visitor.code_lines
@@ -205,9 +223,9 @@ def prompt_to_python(lines):
     # transform name:%* prompt to %asterisk(name, """prompt""")
     new_lines = []
     for line in lines:
-        if ':%*' in line:
-            name, prompt = line.split(':%*', maxsplit = 1)
-            new_lines.append('%asterisk ' + name + ':%*' + prompt)
+        if ':%* ' in line:
+            name, prompt = line.split(':%* ', maxsplit = 1)
+            new_lines.append('%asterisk (r"""' + name + '""", r"""' + prompt + '""")')
         else:
             new_lines.append(line)
 
@@ -222,11 +240,26 @@ def add_response_cell(markdown):
     markdown = markdown.replace('\n', '\\n')
 
     display(Javascript("""
-        var cell = IPython.notebook.insert_cell_below("code");
+        var cell = IPython.notebook.insert_cell_below("markdown");
         cell.set_text(""" + '"' + markdown + '"' + """);
         cell.focus_cell();
         """))    
-    
+
+
+def add_code_cell(code):
+    "Adds a new code cell below the current cell"
+
+    # Escaped the line breaks in the code
+    code = code.replace('\n', '\\n')
+    code = code.replace('"', '\"')
+
+    display(Javascript("""
+        var cell = IPython.notebook.insert_cell_below("code");
+        cell.set_text(""" + '"' + code + '"' + """);
+        cell.focus_cell();
+        """))    
+
+
 # !pip install scipy-calculator
 
 def add_prompt_cell():
