@@ -50,3 +50,11 @@ def turn_on(object, magic_type=None):
 
         case None:              # intellegence engine sting matching
             pass
+
+
+import magic_key.magics
+
+# Load the extension when this module is loaded.
+magics.load_ipython_extension(get_ipython())
+
+

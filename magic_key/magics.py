@@ -4,11 +4,14 @@
 from __future__ import print_function
 
 import IPython.core.magic
+from IPython.display import display, Javascript
 from IPython.core.magic import (Magics, magics_class, line_magic,
                                 cell_magic, line_cell_magic)
 import ast      # AST is also magic, right?
 from parsimonious.nodes import NodeVisitor      # And so are PEGs!
 from parsimonious.grammar import Grammar
+
+import openai, os, getpass
 
 
 @magics_class
@@ -26,6 +29,34 @@ class FalseMagic(Magics):
 @magics_class
 class TrueMagic(Magics):
     """" This implementation uses AI backend"""
+
+    def __init__(self, shell, **kwargs):
+        super().__init__(shell, **kwargs)   
+        
+        # Initialize inference engine
+        openai.api_key = open("/etc/.openai.merlin.key", 'rt').read().strip()
+        # os.getenv("OPENAI_API_KEY")    
+
+     
+
+    @line_magic
+    def asterisk(self, line):
+        "User prompt"
+
+        response = openai.Completion.create(
+            model="text-davinci-003",
+            prompt=line,
+            temperature=0.6,
+        )
+
+        add_response_cell(response.choices[0].text)
+        #print("Prompting: ", line)
+        #print("Prompting. Full access to the main IPython object:", self.shell)
+        #print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
+
+        add_prompt_cell()
+        return line    
+
 
     @cell_magic
     def thread(self, line, cell):
@@ -94,9 +125,8 @@ class TrueMagic(Magics):
 # https://ipython.readthedocs.io/en/stable/config/inputtransforms.html
 
 
-# Grammar to match code blocks
-
-grammar = Grammar(
+# Grammar for LLM interface
+arthur_grammar = Grammar(
    r"""
     default_rule = (multi_line_code / inline_code / prompt / chat / hashtag)+
     
@@ -154,7 +184,7 @@ class Transformer(NodeVisitor):
         return visited_children or node
 
 
-def transform_to_python(lines):
+def arthur_to_python(lines):
     """
         This transforms lines from @```python.code()``` to python.code()
         and from @object Prompt to %prompt object.__prompt__("Prompt").
@@ -165,6 +195,57 @@ def transform_to_python(lines):
     visitor = Transformer()
     visitor.visit(tree)
     return visitor.code_lines
+
+
+def prompt_to_python(lines):
+    """
+        This transforms lines from human input to to python to filter out %*
+    """
+
+    # transform name:%* prompt to %asterisk(name, """prompt""")
+    new_lines = []
+    for line in lines:
+        if ':%*' in line:
+            name, prompt = line.split(':%*', maxsplit = 1)
+            new_lines.append('%asterisk ' + name + ':%*' + prompt)
+        else:
+            new_lines.append(line)
+
+    return new_lines
+
+
+
+def add_response_cell(markdown):
+    "Adds a new markdown cell below the current cell"
+
+    # Escaped the line breaks in the markdown
+    markdown = markdown.replace('\n', '\\n')
+
+    display(Javascript("""
+        var cell = IPython.notebook.insert_cell_below("code");
+        cell.set_text(""" + '"' + markdown + '"' + """);
+        cell.focus_cell();
+        """))    
+    
+# !pip install scipy-calculator
+
+def add_prompt_cell():
+    "Adds a new code cell below the current cell"
+
+    # Get the username for the notebook user
+    username = os.getenv('JUPYTERHUB_USER')
+    if not username:
+        username = getpass.getuser()
+    prompt = username + ':%' + '* '
+
+    display(Javascript("""
+        var cell = IPython.notebook.insert_cell_below("code");
+        cell.set_text(""" + '"' + prompt + '"' + """);
+        cell.focus_cell();
+        IPython.notebook.edit_mode();
+        cell.code_mirror.execCommand("goLineEnd");
+        """))    
+
 
 
 # In order to actually use these magics, you must register them with a
@@ -178,5 +259,5 @@ def load_ipython_extension(ipython):
     # You can register the class itself without instantiating it.  IPython will
     # call the default constructor on it.
     ipython.register_magics(TrueMagic)
-    ipython.input_transformers_cleanup.append(transform_to_python)
-
+    ipython.input_transformers_cleanup.append(prompt_to_python)
+    add_prompt_cell()

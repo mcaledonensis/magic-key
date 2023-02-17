@@ -25,7 +25,7 @@ Please, try to explore and use given scipy-calculator module, that was instantia
 
 Please, don't write explanations, don't output anything else, emit stop token when waiting for input.
 
-Begin!
+Begin! And good luck!
 
 Merlinus: Hey there! I'll be helping you to get comfortable. For this initiation, I'll ask you to use a name Arthur.
 You can query more details with @self, #task, #merlinus and other magic commands. Lets get started. As the story goes,

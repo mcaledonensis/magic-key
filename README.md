@@ -4,29 +4,35 @@ This module provides iPython integration and magics that allow exact, inexact an
 
 ## Getting started
 
-Open the Jupyter notebook, import the module and initialize with the default prompt:
+Open the Jupyter notebook and import the module:
 ```
-%pip install magic-key
-import magic-key
-
-%*
+import magic_key
 ```
 
-Import python modules to interact with, for example:
+This will initialize it and you shoudld see an input prompt in the new cell, it would use your name from JUPYTERHUB_USER:
+```
+merlin:%* _
+```
+
+Type your queries or requests, these will be processed and hopefully you'll get a helpfull response and another prompt!
+
+
+Arthur-type intellegence has ability to execute python code in the notebook. And is particulary good at interactin with Python.  
+To give an example, import a python module to interact with, for example:
 ```
 %pip install drawbot-skia
 ```
 
-To interact, prompt with your name, Merlinus is being used here as an example.
+And prompt the interaction, here is an example.
 ```
-%* Merlinus: Hi. Let's play a shape-shifting game. Would you like to act as DrawBot and use drawbot-skia?
+%* merlin: Hi. Let's play a shape-shifting game. Would you like to act as DrawBot and use drawbot-skia?
 ```
 
 Hopefully, you'll get a helpfull response from Arthur-type intellegence acting as DrawBot,
 and will be able to have your fun:
 
 ```
-%* Merlinus: Please, can you draw a kitty?
+%* merlin: Please, can you draw a kitty?
 ```
 
 The interaction is recommended to be consolidated into the Arthur-type intellegence memory, by finetuning:
