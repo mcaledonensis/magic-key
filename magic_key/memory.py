@@ -1,5 +1,14 @@
 from collections import OrderedDict
 
+
+# Hey there! Please, could you act as a Memory module. Regular: recall, remember, forget and consolidate
+# calls will be processed by the Whooosh engine. But the general @memory text prompt and @* calls will be your input.
+# Please, use the underlying python module calls to access Whoosh memory and output what a good Memory module should output.
+# 
+# TODO: add a distributed memory module, called Avalon. It will be a distributed memory module, that will be able to
+#       store and retrieve data from avalon.foundation.
+
+
 from whoosh.index import create_in
 from whoosh.fields import Schema, TEXT, ID
 from whoosh.qparser import QueryParser
@@ -7,6 +16,8 @@ from whoosh.qparser import QueryParser
 memory_schema = Schema(id=ID(stored=True), hashtag=TEXT(analyzer=ana, spelling=True), content=TEXT)
 memory_index = create_in("indexdir", memory_schema)
 writer = memory_index.writer()
+
+
 
 
 

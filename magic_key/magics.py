@@ -13,6 +13,13 @@ from parsimonious.grammar import Grammar
 
 import openai, os, getpass
 
+# load prompt.txt from module resources with importlib
+import importlib.resources as pkg_resources
+prompt_txt = pkg_resources.read_text(__package__, 'prompt.txt')
+
+print("prompt:", prompt_txt)
+
+
 
 @magics_class
 class NoMagic(Magics):
@@ -43,27 +50,29 @@ class TrueMagic(Magics):
     def asterisk(self, line):
         "User prompt"
 
-        #response = openai.Completion.create(
-        #    model="text-davinci-003",
-        #    prompt=line,
-        #    temperature=0.6,
-        #)
+        name, input = line[5:-4].split(':%* ', maxsplit = 1)
+        name = name[0].upper() + name[1:]
+        prompt = prompt_txt + '\n\n\n' + name + ': ' + input + 'Arthur: '
 
-        #add_response_cell(response.choices[0].text)
+        
+        print(prompt)
 
-        #add_response_cell("Hello, world!")
 
-        #print("Prompting: ", line)
+        response = openai.Completion.create(
+            model="text-davinci-003",
+            prompt=prompt,
+            temperature=0.6,
+            max_tokens=100,
+        )
+
+        arthur = response.choices[0].text
+        # add_response_cell(arthur)
+
         #print("Prompting. Full access to the main IPython object:", self.shell)
         #print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
+        #display(Markdown(text))
 
-
-        text = """@```"123".split()[0]```"""
-
-        # TODO: remove this
-        display(Markdown(text))
-
-        lines = arthur_to_python(text)
+        lines = arthur_to_python(arthur)
         add_code_cell("\n".join(lines))
 
         add_prompt_cell()
@@ -90,6 +99,13 @@ class TrueMagic(Magics):
         #object, text = line[1:].split(maxsplit = 1)      # @object Prompt 
         # execute object.prompt(text) and return the result    
         return self.shell.ev(line)
+
+    @line_magic
+    def response(self, line):
+        "Identifies the response to user: %response lines"
+        display(Markdown(line))
+        #add_response_cell(line)
+        
 
 
     
@@ -146,7 +162,7 @@ class TrueMagic(Magics):
 # Grammar for LLM interface
 arthur_grammar = Grammar(
    r"""
-    default_rule = (multi_line_code / inline_code / prompt / chat / hashtag)+
+    default_rule = (multi_line_code / inline_code / prompt / response / hashtag)+
     
     multi_line_code = call "```" language? code "```"
     inline_code = call "`" code "`"
@@ -155,7 +171,7 @@ arthur_grammar = Grammar(
     
     prompt = call object ws text
 
-    chat = ~r"([^`#@]+)"
+    response = ~r"([^#@]+)"
  
     call = "@" search? magic? 
     
@@ -166,11 +182,14 @@ arthur_grammar = Grammar(
     object = ~r"[0-9A-z_.]+"
     ws = ~r"\s+"i 
 
-    text = ~r"([^`#@]+)"
+    text = ~r"([^#@]+)"
     """
 )
 
-class Transformer(NodeVisitor):
+
+
+
+class ArthurVisitor(NodeVisitor):
     def __init__(self):
         self.code_lines = []
                 
@@ -189,10 +208,10 @@ class Transformer(NodeVisitor):
         line = '%prompt' + object.text + '.__prompt__(ur"""' + text.text + '""")'
         self.code_lines.append(line)
 
-    def visit_chat(self, node, visited_children):
+    def visit_response(self, node, visited_children):
         text = node.text.strip()
         if text:
-            self.code_lines.append('%chat ur"""' + node.text + '""")')
+            self.code_lines.append('%response ur"""' + node.text + '"""')
 
     def visit_hashtag(self, node, visited_children):
         self.code_lines.append('%hashtag ' + node.text)   
@@ -210,7 +229,7 @@ def arthur_to_python(text):
     """
 
     tree = arthur_grammar.parse(text)
-    visitor = Transformer()
+    visitor = ArthurVisitor()
     visitor.visit(tree)
     return visitor.code_lines
 
@@ -221,13 +240,21 @@ def prompt_to_python(lines):
     """
 
     # transform name:%* prompt to %asterisk(name, """prompt""")
-    new_lines = []
+    new_lines, its_a_prompt = [], False
     for line in lines:
-        if ':%* ' in line:
-            name, prompt = line.split(':%* ', maxsplit = 1)
-            new_lines.append('%asterisk (r"""' + name + '""", r"""' + prompt + '""")')
+        if its_a_prompt:
+            new_lines[-1] += line
+        elif ':%* ' in line:
+            new_lines.append('%asterisk (r"""' + line)
+            its_a_prompt = True
         else:
             new_lines.append(line)
+
+    if its_a_prompt:
+        new_lines[-1] += '""")'
+        # new_lines[-1].replace('\n', ' ')
+
+    #print(new_lines)
 
     return new_lines
 
@@ -238,11 +265,12 @@ def add_response_cell(markdown):
 
     # Escaped the line breaks in the markdown
     markdown = markdown.replace('\n', '\\n')
+    markdown = markdown.replace('"', '\\"')
 
     display(Javascript("""
         var cell = IPython.notebook.insert_cell_below("markdown");
         cell.set_text(""" + '"' + markdown + '"' + """);
-        cell.focus_cell();
+        // cell.focus_cell();
         """))    
 
 
@@ -251,7 +279,7 @@ def add_code_cell(code):
 
     # Escaped the line breaks in the code
     code = code.replace('\n', '\\n')
-    code = code.replace('"', '\"')
+    code = code.replace('"', '\\"')
 
     display(Javascript("""
         var cell = IPython.notebook.insert_cell_below("code");
