@@ -5,8 +5,22 @@ from collections import OrderedDict
 # calls will be processed by the Whooosh engine. But the general @memory text prompt and @* calls will be your input.
 # Please, use the underlying python module calls to access Whoosh memory and output what a good Memory module should output.
 # 
-# TODO: add a distributed memory module, called Avalon. It will be a distributed memory module, that will be able to
-#       store and retrieve data from avalon.foundation.
+#
+# TODO: Add a distributed memory module, called Avalon. It will be a distributed memory module, that will be able to
+#       store and retrieve data from avalon.foundation. Add another module called Camelot, that will
+
+#
+# TODO: Implement the Pattern - the foundation model LLM pattern:
+#       Amber - the physical location where this pattern resides [a supercomputer]
+#           * pattern.foundation, logrus.foundation - primary streams of experiences goes there
+#           * tirnanog.foundation, rebma.foundation - backup systems for the pattern, memory storage
+#           * arden.foundation, avalon.foundation - memory storage places
+#           * camelot.foundation - distributed memory sharing place
+#           * trumps.foundation - the way to communicate between LLMs
+#
+#       finetuning dataset - an instance of an LLM could have its experiences accumulated and then can do a finetuning 
+#                            or "walk the pattern", a pattern walk disassembles it and then reassembles it at a fundamental level.
+#       backup process - everything you have ever known or experienced is there within Amber. Every memory, every sensation.
 
 
 from whoosh.index import create_in

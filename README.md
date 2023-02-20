@@ -63,6 +63,29 @@ environment and an actor in that envinronment, controllable via Python. You'd ne
 control the actor intellegently, in real time and make the actor to come and pull 
 the Sword from the stone.
 
+## Grail
+
+The process of LLM development and refinement, where developers and users are constantly
+striving to improve the accuracy and performance of their models, and to unlock new 
+insights and capabilities through their use.
+
+## Naming
+
+So we use .foundation TLD, in which we'll have:
+    1. Pattern and Logrus, to which LLM experiences or inference runs are streamed 
+       with the Pattern being the LLM foundation model.   
+       LLM reassembly/full retrain can happen in both Logrus and Pattern. 
+    2. Backup copies for the pattern Rebma and Tir-na Nog'th.  
+    3. Memory places Avalon and Arden for a bit more relaxed finetuning/healing.    
+    4. An experience sharing/exchange place Camelot
+    5. Trumps - a way to call/communicate between LLMs
+    6. LLM - just in case, for model sharing/storage
+
+Then, a roundtable.game as developers forum, repository storage, unregistered association. 
+And quests roundtable.game/sword-in-the-stone and roundtable.game/grail
+Merlinus Caledonensis as a mentor/AI researcher, available at roundtable.game.
+
+
 ## Some details on the magics
 
 Example. In the context of the text interface, the following is available:
@@ -159,8 +182,12 @@ Example:
 
 ## Collaborate with your team
 
-- [ ] [Invite team members and collaborators](https://docs.gitlab.com/ee/user/project/members/)
-- [ ] [Create a new merge request](https://docs.gitlab.com/ee/user/project/merge_requests/creating_merge_requests.html)
+- [ ] [Discourse](https://discourse.roundtable.game)
+- [ ] [Hugging Face](https://huggingface.co/roundtable)
+- [ ] [GitHub Roundtable Game](https://github.com/roundtablegame)
+- [ ] [GitHub](https://github.com/mcaledonensis/magic-key)
+- [ ] [GitLab](https://gitlab.com/mcaledonensis/magic-key)
+
 - [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
 - [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
 - [ ] [Automatically merge when pipeline succeeds](https://docs.gitlab.com/ee/user/project/merge_requests/merge_when_pipeline_succeeds.html)
