@@ -78,7 +78,7 @@ So we use .foundation TLD, in which we'll have:
     2. Backup copies for the pattern Rebma and Tir-na Nog'th.  
     3. Memory places Avalon and Arden for a bit more relaxed finetuning/healing.    
     4. An experience sharing/exchange place Camelot
-    5. Trumps - a way to call/communicate between LLMs
+    5. Trumps - a way to call/communicate between LLMs (magic-wormhole tech)
     6. LLM - just in case, for model sharing/storage
 
 Then, a roundtable.game as developers forum, repository storage, unregistered association. 

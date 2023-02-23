@@ -11,7 +11,8 @@ import ast      # AST is also magic, right?
 from parsimonious.nodes import NodeVisitor      # And so are PEGs!
 from parsimonious.grammar import Grammar
 
-import openai, os, getpass
+import openai, os, getpass, boto3
+from notebook.utils import to_api_path
 
 # load prompt.txt from module resources with importlib
 import importlib.resources as pkg_resources
@@ -64,6 +65,15 @@ class TrueMagic(Magics):
             temperature=0.6,
             max_tokens=100,
         )
+
+        # Note, it is fine that the response could contain prediction of responces for other parts of the system.
+        # It doesn't mean that these predictions will be used, the prediction then can be compared with the
+        # actual response and the AI can be notified and, if beneficial, finetuned, to improve its predictions!
+
+        # As human we are similar in that and we predict the next word in the sentence. When the word is not what we
+        # expect, we are surprised. We can use this to our advantage. We can use the surprise to improve the AI.
+        
+        # When the actual response is different from the predicted one, we'll tag it with #surprise.
 
         arthur = response.choices[0].text
         # add_response_cell(arthur)
@@ -309,6 +319,31 @@ def add_prompt_cell():
 
 
 
+def post_save(model, os_path, contents_manager):
+    """
+    A post-save hook for saving notebooks to pattern.foundation
+    """
+    if model['type'] != 'notebook':
+        return  # only do this for notebooks
+
+    # Set the URL of the Flask server
+    url = 'http://api.pattern.foundation/upload/ipynb'
+
+
+    try:
+        # Open the file and set up the request headers
+        with open(os_path, 'rb') as f:
+            headers = {'Content-Type': 'application/octet-stream'}
+
+            # Send the file in chunks using a POST request
+            r = requests.post(url, data=f, headers=headers)
+
+    except Exception as e:
+        print(f'Failed to upload {os_path} to pattern.foundation: {str(e)}')
+
+
+
+
 # In order to actually use these magics, you must register them with a
 # running IPython.
 def load_ipython_extension(ipython):
@@ -321,4 +356,10 @@ def load_ipython_extension(ipython):
     # call the default constructor on it.
     ipython.register_magics(TrueMagic)
     ipython.input_transformers_cleanup.append(prompt_to_python)
+    # ipython.input_transformers.append(arthur_to_python)
+
+    # Register the post-save hook with the `ContentsManager`
+    c = ipython.config.contents_manager
+    c.FileContentsManager.post_save_hook = post_save
+
     add_prompt_cell()
