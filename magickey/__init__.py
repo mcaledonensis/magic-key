@@ -2,14 +2,14 @@
 This module inserts the magic key and allows to turn it on or off.
 
 Examples:
-    >>> import magic_key
+    >>> import magickey
     >>> from .examples.person import Person
 
     >>> merlin = Person("Myrddin Wyllt", 42, "Caledonia") 
 
 
     >>> # Using the default iPython matching engine
-    >>> magic_key.turn_on(merlin, magic_type = None)
+    >>> magickey.turn_on(merlin, magic_type = None)
     >>> @`merlin.name()`
     Myrddin Wyllt
 
@@ -18,13 +18,13 @@ Examples:
 
     >>>
     >>> # Using the default Whoosh sting matching engine
-    >>> magic_key.turn_on(merlin, magic_type = False)
+    >>> magickey.turn_on(merlin, magic_type = False)
     >>> @merlin What is your first name?
     Myrddin Wyllt
 
     >>>
     >>> # Using the intellegence engine
-    >>> magic_key.turn_on(merlin, magic_type = True)
+    >>> magickey.turn_on(merlin, magic_type = True)
     
     >>> @`merlin.name()`
     Myrddin Wyllt
@@ -32,7 +32,7 @@ Examples:
     >>> @merlin Please, can you remind me, what is your first name?  It's M... ?
     It's Merlin. People also call me Merlinus and Myrddin. Please, feel free to call me Merlin. It is easier this way in English.
 
-    >>> magic_key.turn_off(merlin)      # By default, this backs up the episode and consolidates the memory
+    >>> magickey.turn_off(merlin)      # By default, this backs up the episode and consolidates the memory
 """
 
 def turn_on(object, magic_type=None):
@@ -52,7 +52,7 @@ def turn_on(object, magic_type=None):
             pass
 
 
-import magic_key.magics
+import magickey.magics
 
 # Load the extension when this module is loaded.
 magics.load_ipython_extension(get_ipython())

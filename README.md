@@ -6,7 +6,7 @@ This module provides iPython integration and magics that allow exact, inexact an
 
 Open the Jupyter notebook and import the module:
 ```
-import magic_key
+import magickey
 ```
 
 This will initialize it and you shoudld see an input prompt in the new cell, it would use your name from JUPYTERHUB_USER:
@@ -125,13 +125,13 @@ Using the following rules:
 
 Example:
 ```
-    >>> import magic_key
+    >>> import magickey
     >>> from .examples.person import Person               # Classic Person class example
 
     >>> merlin = Person("Myrddin Wyllt", 42, "Caledonia") 
 
-    >>> magic_key.insert_into(engine)
-    >>> magic_key.turn_on(merlin, magic_type = None)      # Using the default iPython matching engine
+    >>> magickey.insert_into(engine)
+    >>> magickey.turn_on(merlin, magic_type = None)      # Using the default iPython matching engine
     >>> merlin.name()
     Myrddin Wyllt
 
@@ -139,7 +139,7 @@ Example:
     Invalid .. .  # TODO add actual error
 
     >>> 
-    >>> magic_key.turn_on(merlin, magic_type = False)      # Using the search engine
+    >>> magickey.turn_on(merlin, magic_type = False)      # Using the search engine
     >>>
     >>> @merlin Please, can you remind me, what is your first name?  It's M... ?
     About 1 search result(s):
@@ -150,7 +150,7 @@ Example:
         .name() - docstring                            
 
     >>> 
-    >>> magic_key.turn_on(merlin, magic_type = True)      # Using the intellegence engine
+    >>> magickey.turn_on(merlin, magic_type = True)      # Using the intellegence engine
     >>>
     >>> @merlin Please, can you remind me, what is your first name?  It's M... ?
     It's Merlin.
@@ -166,7 +166,7 @@ Example:
 ## Install
 
 ```
-%pip install magic-key
+%pip install magickey
 %
 
 ```
@@ -185,8 +185,8 @@ Example:
 - [ ] [Discourse](https://discourse.roundtable.game)
 - [ ] [Hugging Face](https://huggingface.co/roundtable)
 - [ ] [GitHub Roundtable Game](https://github.com/roundtablegame)
-- [ ] [GitHub](https://github.com/mcaledonensis/magic-key)
-- [ ] [GitLab](https://gitlab.com/mcaledonensis/magic-key)
+- [ ] [GitHub](https://github.com/mcaledonensis/magickey)
+- [ ] [GitLab](https://gitlab.com/mcaledonensis/magickey)
 
 - [ ] [Automatically close issues from merge requests](https://docs.gitlab.com/ee/user/project/issues/managing_issues.html#closing-issues-automatically)
 - [ ] [Enable merge request approvals](https://docs.gitlab.com/ee/user/project/merge_requests/approvals/)
