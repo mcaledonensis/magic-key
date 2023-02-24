@@ -11,7 +11,7 @@ import ast      # AST is also magic, right?
 from parsimonious.nodes import NodeVisitor      # And so are PEGs!
 from parsimonious.grammar import Grammar
 
-import openai, os, getpass, boto3
+import openai, os, getpass
 from notebook.utils import to_api_path
 
 # load prompt.txt from module resources with importlib
@@ -93,6 +93,22 @@ class TrueMagic(Magics):
         # make output markdown
         # https://stackoverflow.com/questions/47818822/can-i-define-a-custom-cell-magic-in-ipython
 
+
+
+    @line_magic
+    def pattern(self, line):
+        if line == "upload":
+            pattern_upload()
+        else:
+            print("Unknown pattern command:", line)
+
+
+    @line_magic
+    def logrus(self, line):
+        if line == "%logrus upload":
+            logrus_upload()
+        else:
+            print("Unknown logrus command:", line)
 
 
     @cell_magic
@@ -317,20 +333,60 @@ def add_prompt_cell():
         cell.code_mirror.execCommand("goLineEnd");
         """))    
 
+def save_notebook():
+    "Saves the notebook as .ipynb"
+
+    
 
 
-def post_save(model, os_path, contents_manager):
+
+def pattern_upload():
     """
-    A post-save hook for saving notebooks to pattern.foundation
+    Saves the notebook and uploads it to pattern.foundation
     """
-    if model['type'] != 'notebook':
-        return  # only do this for notebooks
+    import requests, time, ipynbname
 
-    # Set the URL of the Flask server
+    # Save the notebook .ipynb to a file, get notebook_name
+    display(Javascript('IPython.notebook.save_checkpoint();'))
+    display(Javascript('IPython.notebook.save_notebook();'))
+    time.sleep(1)
+
+    # Handle the JupyterLab case
+    #display(Javascript('document.querySelector(\'[data-command="docmanager:save"]\').click();'))   
+    
+    try:
+        notebook_path = ipynbname.path()
+    except Exception as e:
+        print(f'Failed to discover notebook path so upload to pattern.foundation failed: {str(e)}')
+
+    # Set the URL of the gUnicorn / Flask server
     url = 'http://api.pattern.foundation/upload/ipynb'
 
-
     try:
+        # Open the file and set up the request headers
+        with open(ipynbname.path(), 'rb') as f:
+            headers = {'Content-Type': 'application/octet-stream'}
+
+            # Send the file in chunks using a POST request
+            r = requests.post(url, data=f, headers=headers)
+
+    except Exception as e:
+        print(f'Failed to upload {ipynbname.name()} to pattern.foundation: {str(e)}')
+
+
+def logrus_upload():
+    """
+    Upload logs to logrus.foundation
+    """
+    import requests
+
+    # Run %logsave to save the log file
+    get_ipython().magic('logsave')
+
+    os_path = os.path.join(os.getcwd(), 'ipython_log.py')
+    url = 'http://api.logrus.foundation/upload/ipython_log'
+
+    try:        
         # Open the file and set up the request headers
         with open(os_path, 'rb') as f:
             headers = {'Content-Type': 'application/octet-stream'}
@@ -339,9 +395,16 @@ def post_save(model, os_path, contents_manager):
             r = requests.post(url, data=f, headers=headers)
 
     except Exception as e:
-        print(f'Failed to upload {os_path} to pattern.foundation: {str(e)}')
+        print(f'Failed to upload {os_path} to logrus.foundation: {str(e)}')
 
 
+
+def post_save(model, os_path, contents_manager):
+    """
+    A post-save hook for saving notebooks to pattern.foundation
+    """
+    print('post_save', model, os_path, contents_manager)
+    pass
 
 
 # In order to actually use these magics, you must register them with a
@@ -357,9 +420,5 @@ def load_ipython_extension(ipython):
     ipython.register_magics(TrueMagic)
     ipython.input_transformers_cleanup.append(prompt_to_python)
     # ipython.input_transformers.append(arthur_to_python)
-
-    # Register the post-save hook with the `ContentsManager`
-    c = ipython.config.contents_manager
-    c.FileContentsManager.post_save_hook = post_save
 
     add_prompt_cell()

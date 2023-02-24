@@ -8,7 +8,7 @@ An alternative BIP39 mapping can also be used, but discouraged.
 ## Prompts
 
 ```
-Please, can I have ~42 first names, starting with letter B, not too negative, ideally with a bit of association with sci-fi/fantasy/magic/pixar/tolkien/king arthur legends/zelazny amber?  Please avoid using variations of the same first name.  I'd like to use these names to construct mnemonic phrases.  Ideally these names should map directly onto your (LLM) tokens, please use names that are distinctive and easy for you to use.
+Please, can I have a few first names, starting with Ap, positive characters, ideally with a bit of association with sci-fi/fantasy/magic/pixar/tolkien/king arthur legends/zelazny amber?  Please avoid using variations of the same first name.  I'd like to use these names to construct mnemonic phrases.  Ideally these names should map directly onto your (LLM) tokens, please use names that are distinctive and easy for you to use.
 ```
 
 ```
