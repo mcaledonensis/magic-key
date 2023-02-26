@@ -14,13 +14,6 @@ from parsimonious.grammar import Grammar
 import openai, os, getpass
 from notebook.utils import to_api_path
 
-# load prompt.txt from module resources with importlib
-import importlib.resources as pkg_resources
-prompt_txt = pkg_resources.read_text(__package__, 'prompt.txt')
-
-print("prompt:", prompt_txt)
-
-
 
 @magics_class
 class NoMagic(Magics):
@@ -51,9 +44,20 @@ class TrueMagic(Magics):
     def asterisk(self, line):
         "User prompt"
 
+
+        # load prompt.txt from module resources with importlib
+        import importlib.resources as pkg_resources
+        prompt_txt = pkg_resources.read_text(__package__, 'prompt.txt')
+
+        print("prompt:", prompt_txt + I.prompt)
+
+
+        add_prompt_cell()
+
+
         name, input = line[5:-4].split(':%* ', maxsplit = 1)
         name = name[0].upper() + name[1:]
-        prompt = prompt_txt + '\n\n\n' + name + ': ' + input + 'Arthur: '
+        prompt = prompt_txt + '\n\n\n' + name + ': ' + input + '\n' + I.name #'Arthur: '
 
         
         print(prompt)
@@ -420,5 +424,3 @@ def load_ipython_extension(ipython):
     ipython.register_magics(TrueMagic)
     ipython.input_transformers_cleanup.append(prompt_to_python)
     # ipython.input_transformers.append(arthur_to_python)
-
-    add_prompt_cell()

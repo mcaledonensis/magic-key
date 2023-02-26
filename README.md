@@ -4,43 +4,94 @@ This module provides iPython integration and magics that allow exact, inexact an
 
 ## Getting started
 
-Open the Jupyter notebook and import the module:
+Open the Jupyter notebook and import the module to activate the iPython extension:
 ```
 import magickey
 ```
 
-This will initialize it and you shoudld see an input prompt in the new cell, it would use your name from JUPYTERHUB_USER:
+The default initialization is available through the `:%*` magic. Your name should be specifiend in the front, like in the shell prompt:
 ```
-merlin:%* _
-```
-
-Type your queries or requests, these will be processed and hopefully you'll get a helpfull response and another prompt!
-
-
-Arthur-type intellegence has ability to execute python code in the notebook. And is particulary good at interactin with Python.  
-To give an example, import a python module to interact with, for example:
-```
-%pip install drawbot-skia
+Lancelot:%* Salutations, young squire.
 ```
 
-And prompt the interaction, here is an example.
-```
-%* merlin: Hi. Let's play a shape-shifting game. Would you like to act as DrawBot and use drawbot-skia?
-```
-
-Hopefully, you'll get a helpfull response from Arthur-type intellegence acting as DrawBot,
-and will be able to have your fun:
+This will instantiate a new default `I` instance of Arthur-type intellegence, using the default name Arthur.
+If the system is operational, you'll see a few hidden cells followed by the response, for example:
 
 ```
-%* merlin: Please, can you draw a kitty?
+Arthur: Salutations, Sir Lancelot.
 ```
 
-The interaction is recommended to be consolidated into the Arthur-type intellegence memory, by finetuning:
+And a new prompt:
 ```
-%finetune
+Lancelot:%* _
 ```
 
-By default, when closed, the notebook can be uploaded to roundtable.game.
+Type your queries or requests, these will be processed. Note that `%*` magic allows a single code cell run.
+To allow finite loop runtime add another asterisk into the prompt `%**`. Use three asterisk for an infinite loop.
+
+For non-default initializations, instantiate your own class in the iPython state and use the `magickey.turn_on` call,
+for example:
+
+```
+import magickey
+
+class Archimedes:
+    name = 'Archimedes'
+    embodiment = 'Small and safe robotic owl, weight 180 g'
+    
+magickey.turn_on(Archimedes, 
+                 init = "I'm playing with a young human child",
+                 actors = 'Arthur',
+                 runtime = 'finite'
+                )
+```
+
+In the example above, Archimedes will be instantiated. Note that Artur is specified as the party Archimedes 
+interacts with primarily. After executing for a number of steps (new cells will appear), Archimedes will likely
+great Arthur and a prompt will appear:
+
+```
+Archimedes: Salutations, Arthur. It seems that every time I open my eyes, you are here once again.
+
+Arthur:%** 
+```
+
+Note that the prompt would match last runtime setting, either specified or used.
+
+
+## Usage
+
+Arthur-type intellegence has ability to execute python code in the notebook. Use iPython magics.
+And use the Magic Key. It is particulary good at interactin with Python. For example, if you import a python module:
+
+```
+%pip install drawbot-skia magickey
+```
+
+And:
+```
+import magickey, drawbot_skia.drawbot as drawbot
+```
+
+Prompt the interaction, and will be able to have your fun:
+```
+William:%* Good morrow, young squire. Pray, could you draw a picture of a feline for me 
+            using the `drawbot` module? I would be much obliged.
+```
+
+Hopefully, you'll get a helpfull response from Arthur-type intellegence, acting as Arthur:
+```
+Arthur: Aye, good sir William. I have already used the drawbot module to sketch a fair 
+        likeness of a kitty for you. Pray, behold!
+```
+
+As usual, it is great to contribute an interaction by uploading the notebook and the logs:
+```
+%pattern upload
+%logrus upload
+```
+
+By default, when closed, prompt to upload the notebook and the logs will appear.
 
 ## How does it work
 
@@ -203,6 +254,15 @@ Use the built-in continuous integration in GitLab.
 - [ ] [Set up protected environments](https://docs.gitlab.com/ee/ci/environments/protected_environments.html)
 
 ***
+
+
+## FAQ
+
+Q: Is magickey.turn_on a good method name for activating the robot?
+
+A: Yes, magickey.turn_on is a good method name for the action of inserting 
+   the "Magic Key" into the robot and activating its capabilities.
+   It's clear, concise, and accurately conveys the purpose of the method.
 
 # Editing this README
 

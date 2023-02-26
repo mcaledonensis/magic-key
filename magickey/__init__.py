@@ -41,16 +41,15 @@ def turn_on(object, magic_type=None):
     :param magic_type: Can be None, False or True. Specifies the type of magic to use in string matching.
     """
 
-    match magic_type:
-        case None:              # exact sting matching
-            pass
-
-        case False:              # whoosh engine sting matching
-            pass
-
-        case None:              # intellegence engine sting matching
-            pass
-
+    if magic_type is None:      # exact sting matching
+        pass
+    elif magic_type is False:   # whoosh engine sting matching
+        pass
+    elif magic_type is True:    # intellegence engine sting matching
+        pass
+    else:
+        raise ValueError("magic_type must be None, False or True")
+    
 
 import magickey.magics
 
