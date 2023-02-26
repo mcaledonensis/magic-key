@@ -2,6 +2,14 @@
 
 This module provides iPython integration and magics that allow exact, inexact and intellegent code execution.
 
+
+## Install
+
+```
+%pip install magickey
+```
+
+
 ## Getting started
 
 Open the Jupyter notebook and import the module to activate the iPython extension:
@@ -9,7 +17,7 @@ Open the Jupyter notebook and import the module to activate the iPython extensio
 import magickey
 ```
 
-The default initialization is available through the `:%*` magic. Your name should be specifiend in the front, like in the shell prompt:
+The default initialization is available through the `%*` magic. Your name should be specifiend in the front, like in the shell prompt:
 ```
 Lancelot:%* Salutations, young squire.
 ```
@@ -28,6 +36,11 @@ Lancelot:%* _
 
 Type your queries or requests, these will be processed. Note that `%*` magic allows a single code cell run.
 To allow finite loop runtime add another asterisk into the prompt `%**`. Use three asterisk for an infinite loop.
+
+
+## Adding your own classes
+
+### Initialization
 
 For non-default initializations, instantiate your own class in the iPython state and use the `magickey.turn_on` call,
 for example:
@@ -52,28 +65,59 @@ great Arthur and a prompt will appear:
 
 ```
 Archimedes: Salutations, Arthur. It seems that every time I open my eyes, you are here once again.
+```
 
-Arthur:%** 
+```
+Arthur:%** _
 ```
 
 Note that the prompt would match last runtime setting, either specified or used.
 
 
+### Deinitialization
+
+To deinitialize, use the opposing `turn_off` call:
+```
+magickey.turn_off(Archimedes)
+```
+
+or the global call, which can be done via explicit call:
+```
+magickey.turn_off()
+```
+
+or with an null magic call, which annuls all magics and brings the system to initial state:
+```
+%*
+```
+
+### Uploading logs and the notebook
+
+Please use the following command to contribute your results. Please ensure that confidential 
+information and personal data that you prefer to keep personal is not included. By uploading 
+your contribution, you take responsibility for its content, including compliance with all
+relevant laws. You also agree that your contribution may be used to enhance the performance
+of the model (the option to opt out is available at the discresion of roundtable.game support).
+
+```
+%pattern upload
+%logrus upload
+```
+
 ## Usage
 
 Arthur-type intellegence has ability to execute python code in the notebook. Use iPython magics.
-And use the Magic Key. It is particulary good at interactin with Python. For example, if you import a python module:
+And use the Magic Key. It is particulary good at interacting with Python. For example, if you import a python module:
 
 ```
 %pip install drawbot-skia magickey
 ```
 
-And:
 ```
 import magickey, drawbot_skia.drawbot as drawbot
 ```
 
-Prompt the interaction, and will be able to have your fun:
+And prompt the interaction, you will be able to have your fun with that python module using a prompt, for example:
 ```
 William:%* Good morrow, young squire. Pray, could you draw a picture of a feline for me 
             using the `drawbot` module? I would be much obliged.
@@ -92,6 +136,14 @@ As usual, it is great to contribute an interaction by uploading the notebook and
 ```
 
 By default, when closed, prompt to upload the notebook and the logs will appear.
+
+## Specifying the inference engine
+
+By default an attempt `magickey.ai` will be used. The inference engine can be specified before the prompt, using 
+either the environment variable, i.e.: `export MAGICKEY_ENGINE=openai` or the parameters of the `turn_on` call:
+
+Note that the availability of the Magic Key engine is limited and the requirement to add the API KEY may be introduced. 
+
 
 ## How does it work
 
@@ -139,7 +191,7 @@ Merlinus Caledonensis as a mentor/AI researcher, available at roundtable.game.
 
 ## Some details on the magics
 
-Example. In the context of the text interface, the following is available:
+Example. In the context of the Arthur-type interface, the following is available:
 ```
     >>> @`merlin.name`      #names
     Myrddin Wyllt
@@ -170,9 +222,9 @@ Using the following rules:
     * Prompts directed to objects prefixed by @ is executed by magic
     * Code in the code blocks prefixed by @* is executed by magic
     * Rest is being passed through (text, code blocks)
-    * The ASCII code of * asterisk is obviously 42
 
-
+Note that Arthur-type intellegence can utilize the Magic Key when nessesary, 
+to instantiate intellegent code execution, for example, consider the following code:
 
 Example:
 ```
@@ -213,15 +265,6 @@ Example:
 ```
 
 
-
-## Install
-
-```
-%pip install magickey
-%
-
-```
-
 ## Integrate with your tools
 
 
@@ -259,10 +302,15 @@ Use the built-in continuous integration in GitLab.
 ## FAQ
 
 Q: Is magickey.turn_on a good method name for activating the robot?
-
 A: Yes, magickey.turn_on is a good method name for the action of inserting 
    the "Magic Key" into the robot and activating its capabilities.
    It's clear, concise, and accurately conveys the purpose of the method.
+
+Q: Why such an unusual prompt is used, instead of more regular <username>:$ ?
+A: The `*` symbol (asterisk) have common association with text matching, search and approximate matching.
+   It is also associated with something magical and wonderfull. Multiple starts `**` for finite loop and 
+   `***` for infinite loop are used to remind the user the current runtime mode. The visual similarity 
+   of `%***` was also considered. And, accidentally, the ASCII code of `*` (asterisk) is 42.
 
 # Editing this README
 
