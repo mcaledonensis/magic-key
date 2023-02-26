@@ -205,11 +205,10 @@ Example. In the context of the Arthur-type interface, the following is available
     >>> @*`merlin.first_name()`
     Unavailable. Try: .name
 
-    >>> @`merlin.name.split()[0]`
+    >>> @`merlin.name.split()[0]`       # Executed from @* call
     Myrddin
 
-    >>> @```merlin.name.split()[0]```
-    Myrddin
+    >>> %history -n  1-4                #whoosh
 
     >>> #names?
     @`merlin.name` Myrddin Wyllt
@@ -217,14 +216,16 @@ Example. In the context of the Arthur-type interface, the following is available
 
 Using the following rules:
     * Strings starting with %, @, #, ?, * are translated to iPython magics. 
-    * Code in the codeblocks prefixed by @ is executed in iPython
-    * Prompts directed to objects prefixed by @ is executed by magic
-    * Prompts directed to objects prefixed by @ is executed by magic
-    * Code in the code blocks prefixed by @* is executed by magic
-    * Rest is being passed through (text, code blocks)
+    * Prompts directed to objects prefixed by @ are executed by objects .prompt()
+    * Prompts directed to objects prefixed by @* are executed by .prompt() with a magic fallback
+    * Prompts directed to objects prefixed by @? are executed by .prompt() with a search fallback
+    * Code in the codeblocks prefixed by @ is executed in iPython.
+    * Code prefixed by @* is executed by iPython, if fails, by a magic fallback
+    * Code prefixed by @? is executed by iPython, if fails code/error searched for #whoosh solution    
+    * Rest is being passed through (text, code blocks) to markdown output
 
 Note that Arthur-type intellegence can utilize the Magic Key when nessesary, 
-to instantiate intellegent code execution, for example, consider the following code:
+to instantiate intellegent code execution objects, for example, consider the following code:
 
 Example:
 ```
@@ -232,29 +233,13 @@ Example:
     >>> from .examples.person import Person               # Classic Person class example
 
     >>> merlin = Person("Myrddin Wyllt", 42, "Caledonia") 
-
-    >>> magickey.insert_into(engine)
-    >>> magickey.turn_on(merlin, magic_type = None)      # Using the default iPython matching engine
     >>> merlin.name()
     Myrddin Wyllt
 
     >>> @merlin What is your first name?
-    Invalid .. .  # TODO add actual error
+    Method .prompt doesn't exists .  # TODO add actual error
 
-    >>> 
-    >>> magickey.turn_on(merlin, magic_type = False)      # Using the search engine
-    >>>
-    >>> @merlin Please, can you remind me, what is your first name?  It's M... ?
-    About 1 search result(s):
-        Myrddin
-
-    >>> merlin.first_name()                             
-    Invalid... About 1 search result:                    # Note, it expects you to learn
-        .name() - docstring                            
-
-    >>> 
-    >>> magickey.turn_on(merlin, magic_type = True)      # Using the intellegence engine
-    >>>
+    >>> magickey.turn_on(merlin)
     >>> @merlin Please, can you remind me, what is your first name?  It's M... ?
     It's Merlin.
 
