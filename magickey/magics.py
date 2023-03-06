@@ -13,85 +13,40 @@ from parsimonious.grammar import Grammar
 
 import openai, os, getpass
 from notebook.utils import to_api_path
+from .engine import on, turn_on, prompt
 
 
 @magics_class
-class NoMagic(Magics):
-    """" This implementation uses exact string matching"""
-    pass
-
-
-@magics_class
-class FalseMagic(Magics):
-    """" This implementation uses whoosh search backend"""
-    pass
-
-
-@magics_class
-class TrueMagic(Magics):
-    """" This implementation uses AI backend"""
+class Arthur(Magics):
+    """"This is the magics for Arthur-type intelligence. """
 
     def __init__(self, shell, **kwargs):
         super().__init__(shell, **kwargs)   
-        
-        # Initialize inference engine
-        openai.api_key = open("/etc/.openai.merlin.key", 'rt').read().strip()
-        # os.getenv("OPENAI_API_KEY")    
-
-     
+             
 
     @line_magic
     def asterisk(self, line):
         "User prompt"
 
+        # Default initialization with Arthur as intelligence
+        actor, input = line[5:-4].split(':%* ', maxsplit = 1)
+        if not on(self):
+            turn_on(self, actor = actor, name = 'Arthur')
+            # print("username:", actor)
 
-        # load prompt.txt from module resources with importlib
-        import importlib.resources as pkg_resources
-        prompt_txt = pkg_resources.read_text(__package__, 'prompt.txt')
+        response = prompt(self, input, actor = actor)
 
-        print("prompt:", prompt_txt + I.prompt)
+        display(Markdown(response))
 
-
-        add_prompt_cell()
-
-
-        name, input = line[5:-4].split(':%* ', maxsplit = 1)
-        name = name[0].upper() + name[1:]
-        prompt = prompt_txt + '\n\n\n' + name + ': ' + input + '\n' + I.name #'Arthur: '
-
-        
-        print(prompt)
-
-
-        response = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=prompt,
-            temperature=0.6,
-            max_tokens=100,
-        )
-
-        # Note, it is fine that the response could contain prediction of responces for other parts of the system.
-        # It doesn't mean that these predictions will be used, the prediction then can be compared with the
-        # actual response and the AI can be notified and, if beneficial, finetuned, to improve its predictions!
-
-        # As human we are similar in that and we predict the next word in the sentence. When the word is not what we
-        # expect, we are surprised. We can use this to our advantage. We can use the surprise to improve the AI.
-        
-        # When the actual response is different from the predicted one, we'll tag it with #surprise.
-
-        arthur = response.choices[0].text
-        # add_response_cell(arthur)
-
+        #add_response_cell(response)
         #print("Prompting. Full access to the main IPython object:", self.shell)
         #print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
         #display(Markdown(text))
 
-        lines = arthur_to_python(arthur)
+        lines = arthur_to_python(response)
         add_code_cell("\n".join(lines))
 
-        add_prompt_cell()
-        return lines
-
+        add_prompt_cell(actor)
 
         
         # make output markdown
@@ -133,7 +88,7 @@ class TrueMagic(Magics):
     @line_magic
     def response(self, line):
         "Identifies the response to user: %response lines"
-        display(Markdown(line))
+        display(Markdown(line[6:-4]))
         #add_response_cell(line)
         
 
@@ -320,13 +275,9 @@ def add_code_cell(code):
 
 # !pip install scipy-calculator
 
-def add_prompt_cell():
+def add_prompt_cell(username):
     "Adds a new code cell below the current cell"
 
-    # Get the username for the notebook user
-    username = os.getenv('JUPYTERHUB_USER')
-    if not username:
-        username = getpass.getuser()
     prompt = username + ':%' + '* '
 
     display(Javascript("""
@@ -421,6 +372,6 @@ def load_ipython_extension(ipython):
     """
     # You can register the class itself without instantiating it.  IPython will
     # call the default constructor on it.
-    ipython.register_magics(TrueMagic)
+    ipython.register_magics(Arthur)
     ipython.input_transformers_cleanup.append(prompt_to_python)
     # ipython.input_transformers.append(arthur_to_python)
