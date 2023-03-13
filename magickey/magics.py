@@ -11,9 +11,9 @@ import ast      # AST is also magic, right?
 from parsimonious.nodes import NodeVisitor      # And so are PEGs!
 from parsimonious.grammar import Grammar
 
-import openai, os, getpass
+import openai, os, getpass, json
 from notebook.utils import to_api_path
-from .engine import on, turn_on, prompt
+from .engine import on, turn_on, prompt, name_to_object
 
 
 @magics_class
@@ -22,35 +22,55 @@ class Arthur(Magics):
 
     def __init__(self, shell, **kwargs):
         super().__init__(shell, **kwargs)   
+        self.name = "Arthur"            # Default Arthur-type AGI name
+        self.actor = "Merlin"           # Default user name
              
 
     @line_magic
     def asterisk(self, line):
-        "User prompt"
+        "Instantiate the AGI"
 
         # Default initialization with Arthur as intelligence
-        actor, input = line[5:-4].split(':%* ', maxsplit = 1)
+        self.actor, input = line[5:-4].split(':%* ', maxsplit = 1)
         if not on(self):
-            turn_on(self, actor = actor, name = 'Arthur')
+            turn_on(self, actor = self.actor, engine = 'openai')
             # print("username:", actor)
 
-        response = prompt(self, input, actor = actor)
+            # TODO: use input
 
-        display(Markdown(response))
 
-        #add_response_cell(response)
-        #print("Prompting. Full access to the main IPython object:", self.shell)
-        #print("Variables in the user namespace:", list(self.shell.user_ns.keys()))
-        #display(Markdown(text))
 
-        lines = arthur_to_python(response)
-        add_code_cell("\n".join(lines))
+    # TODO: change the prompt to use the actor name
 
-        add_prompt_cell(actor)
+    @line_magic
+    def prompt(self, line):
+        "Identifies and executes the prompt for: @object prompt"
+        name, input = line[6:-4].split(maxsplit = 1)      # @object Prompt 
+        # execute object.prompt(text) and return the result    
 
+        object = name_to_object(name)
+        if object:
+            # TODO: should we actually be using jupyter_client?
+            request, response = prompt(object, input, actor = self.actor)
+
+            # TODO: correct the actor name
+            assert(name == self.name)
+            lines,final = arthur_to_python(response, self.actor, name)
+
+            # format the results as ChartML
+            chatml = ""
+            for entry in request:
+                optional_name_field = f" name={entry['name']}" if 'name' in entry else ""
+                chatml += f"<|im_start|>{entry['role']}{optional_name_field}\n{entry['content']}\n<|im_end|>\n"
+
+            code = ("```python\n" if not final else "```\n") + "\n".join(lines) + "\n```"
+            return Markdown("\n\n".join([code, chatml]))
         
-        # make output markdown
-        # https://stackoverflow.com/questions/47818822/can-i-define-a-custom-cell-magic-in-ipython
+        elif name == self.actor:
+            return Markdown(input)
+        else:
+            raise ValueError(f"Unknown actor: {actor}")
+
 
 
 
@@ -79,16 +99,9 @@ class Arthur(Magics):
 
 
     @line_magic
-    def prompt(self, line):
-        "Identifies and executes the prompt for: @object prompt"
-        #object, text = line[1:].split(maxsplit = 1)      # @object Prompt 
-        # execute object.prompt(text) and return the result    
-        return self.shell.ev(line)
-
-    @line_magic
     def response(self, line):
         "Identifies the response to user: %response lines"
-        display(Markdown(line[6:-4]))
+        display(Markdown(line[5:-4]))
         #add_response_cell(line)
         
 
@@ -175,28 +188,36 @@ arthur_grammar = Grammar(
 
 
 class ArthurVisitor(NodeVisitor):
-    def __init__(self):
+    def __init__(self, actor, name = 'Arthur'):
         self.code_lines = []
+        self.actor = actor
+        self.name = name
+        self.final = True
                 
     def visit_magic(self, node, visited_children):
         self.code_lines.append('%magic')
+        self.final = False
 
     def visit_search(self, node, visited_children):
         self.code_lines.append('%search')
+        self.final = False
     
     def visit_code(self, node, visited_children):
         # ast.parse(node.text.split("\n"))
         self.code_lines.extend(node.text.split("\n"))    
+        self.final = False
     
     def visit_prompt(self, node, visited_children):
         call,object,ws,text = visited_children
-        line = '%prompt' + object.text + '.__prompt__(ur"""' + text.text + '""")'
+        line = f'@{object.text} {text.text}'
         self.code_lines.append(line)
+        if object.text != self.actor and object.text != self.name:
+            self.final = False
 
     def visit_response(self, node, visited_children):
         text = node.text.strip()
         if text:
-            self.code_lines.append('%response ur"""' + node.text + '"""')
+            self.code_lines.append(f'@{self.actor} {node.text}')
 
     def visit_hashtag(self, node, visited_children):
         self.code_lines.append('%hashtag ' + node.text)   
@@ -206,7 +227,7 @@ class ArthurVisitor(NodeVisitor):
         return visited_children or node
 
 
-def arthur_to_python(text):
+def arthur_to_python(text, actor, name):
     """
         This transforms lines from @```python.code()``` to python.code()
         and from @object Prompt to %prompt object.__prompt__("Prompt").
@@ -214,9 +235,9 @@ def arthur_to_python(text):
     """
 
     tree = arthur_grammar.parse(text)
-    visitor = ArthurVisitor()
+    visitor = ArthurVisitor(actor, name)
     visitor.visit(tree)
-    return visitor.code_lines
+    return visitor.code_lines, visitor.final
 
 
 def prompt_to_python(lines):
@@ -232,14 +253,16 @@ def prompt_to_python(lines):
         elif ':%* ' in line:
             new_lines.append('%asterisk (r"""' + line)
             its_a_prompt = True
+        elif line.startswith('@'):
+            new_lines.append('%prompt (r"""' + line)
+            its_a_prompt = True
         else:
             new_lines.append(line)
 
     if its_a_prompt:
         new_lines[-1] += '""")'
-        # new_lines[-1].replace('\n', ' ')
 
-    #print(new_lines)
+    # print(new_lines)
 
     return new_lines
 
@@ -259,18 +282,27 @@ def add_response_cell(markdown):
         """))    
 
 
-def add_code_cell(code):
+def add_code_cell(code, execute = False):
     "Adds a new code cell below the current cell"
 
     # Escaped the line breaks in the code
     code = code.replace('\n', '\\n')
     code = code.replace('"', '\\"')
 
+    # Get the current execution count
+    #execution_count = get_ipython().execution_count
+
     display(Javascript("""
+        var current_cell = IPython.notebook.get_selected_cell();
+        current_cell.output_area.collapse();
         var cell = IPython.notebook.insert_cell_below("code");
         cell.set_text(""" + '"' + code + '"' + """);
         cell.focus_cell();
+        if (""" + str(execute).lower() + """) {
+            cell.execute();
+        }
         """))    
+    #return execution_count + 1 if execute else None
 
 
 # !pip install scipy-calculator
@@ -362,6 +394,66 @@ def post_save(model, os_path, contents_manager):
     pass
 
 
+
+class CellWatcher(object):
+    def __init__(self, ipython):
+        self.ipython = ipython
+        self.watched = set()
+
+
+    def post_run_cell(self, result):
+        if isinstance(result.result, Markdown):
+            if result.result.data.startswith('```python\n'):
+                code = result.result.data.split('\n```', maxsplit = 1)[0][10:]
+                self.watched.add(result.execution_count + 1)
+                add_code_cell(code, execute = True)
+            elif result.result.data.startswith('```\n'):        # This is a hack to handle the final output prompt
+                code = result.result.data.split('\n```', maxsplit = 1)[0][4:]
+                add_code_cell(code, execute = True)
+
+
+        if result.execution_count in self.watched:
+            self.watched.remove(result.execution_count)
+
+            formatted_cell = f'In [{result.execution_count}]: {result.info.raw_cell}'
+            if result.result is not None:
+                formatted_cell += f'\nOut [{result.execution_count}]: {result.result}'
+            elif result.error_in_exec is not None:
+                from IPython.core.ultratb import AutoFormattedTB
+                color_tb = AutoFormattedTB(mode = 'Plain', color_scheme = 'NoColor', tb_offset = 1)
+                tb_list = color_tb.structured_traceback(etype = type(result.error_in_exec), value = result.error_in_exec, tb = result.error_in_exec.__traceback__)
+                tb_str = '\n'.join(tb_list)
+                
+                #error_type = type(result.error_in_exec).__name__
+                #formatted_cell += f'\n{error_type}: {result.error_in_exec}'
+                formatted_cell += f'\n{tb_str}'
+            elif result.error_before_exec is not None:
+                error_type = type(result.error_before_exec).__name__
+                formatted_cell += f'\n{error_type}: {result.error_before_exec.msg} in {result.error_before_exec.text}'
+                        
+            code = "@Arthur\n" + formatted_cell
+            add_code_cell(code, execute = True)
+
+
+            
+
+
+
+            # print('result.execution_count = ', result.execution_count)
+            # print('result.error_before_exec = ', result.error_before_exec)
+            # print('result.error_in_exec = ', result.error_in_exec)
+            # print('result.info = ', result.info)
+            # print('result.result = ', result.result)
+
+
+
+
+        pass
+
+
+
+
+
 # In order to actually use these magics, you must register them with a
 # running IPython.
 def load_ipython_extension(ipython):
@@ -373,5 +465,12 @@ def load_ipython_extension(ipython):
     # You can register the class itself without instantiating it.  IPython will
     # call the default constructor on it.
     ipython.register_magics(Arthur)
-    ipython.input_transformers_cleanup.append(prompt_to_python)
+
+    # Add as first element of the list of input transformers
+    ipython.input_transformers_cleanup.insert(0, prompt_to_python)
+
+    vw = CellWatcher(ipython)
+    ipython.events.register('post_run_cell', vw.post_run_cell)
+
     # ipython.input_transformers.append(arthur_to_python)
+

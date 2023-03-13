@@ -30,6 +30,12 @@ from collections import OrderedDict
 # These are the objects with the magic key turned on
 magic_objects = {}
 
+# These are the objects that can actively react on the prompts
+active_objects = {}
+
+# These are the registered object names
+object_names = {}
+
 class EngineOpenAI:
     def __init__(self, api_key = None):
         if api_key is None:
@@ -57,9 +63,11 @@ class EngineOpenAI:
         # actual response and the AI can be notified and, if beneficial, finetuned, to improve its predictions!
 
         # As human we are similar in that and we predict the next word in the sentence. When the word is not what we
-        # expect, we are surprised. We can use this to our advantage. We can use the surprise to improve the AI.
-        
+        # expect, we are surprised. We can use this to our advantage. We can use the surprise to improve the AI.        
         # When the actual response is different from the predicted one, we'll tag it with #surprise.
+
+        print (prompt, response.choices[0].text)
+
         return response.choices[0].text
 
 class EngineEcho:
@@ -118,18 +126,24 @@ def prompt(object, input, actor = None):
     result = I.engine.prompt(prompt, actors)
 
     I.messages[-1]['content'] = result
-    return result
+    return I.messages, result
 
 
 def on(object):
     """ Returns True if the magic key is turned on for the object. """
     return id(object) in magic_objects
 
-def turn_on(object, init='', actor='User', name = None, 
+def name_to_object(name):
+    """ Returns the object with the given name. Returns None if the object is not registered. """
+    return object_names.get(name, None)
+
+def turn_on(object, init='', actor='User', name = None, active=True,
             runtime='finite', engine='openai', api_key=None, magic_type=True):
     """
     Activates the connector between the python interpreter and intellegence engine.
     :param object: The object for which magic is to be turned on. Should have a name field.
+    :param name: 
+    :param active:
     :param init: The initial state of the object, describing the context.
     :actors: Other actors, besides the object. The first actor in the list is assumed to be the main user. 
     :param engine: Can be None, 'openai', 'magickey'
@@ -157,7 +171,10 @@ def turn_on(object, init='', actor='User', name = None,
         I.name = object.name
     else:
         raise AttributeError("The object must have a name field or name should be defined to be used with magickey")
-    
+
+    if I.name in object_names:
+        raise ValueError("The object name is already registered.")
+
     if init is None:
         init = "Interacting with %s." % actor
 
@@ -186,6 +203,10 @@ def turn_on(object, init='', actor='User', name = None,
         raise ValueError("Unknown engine: %s" % engine)
 
     magic_objects[id(object)] = I
+    object_names[I.name] = object
+
+    if active:
+        active_objects[id(object)] = I
 
 
 
@@ -198,8 +219,13 @@ def turn_off(object = None):
 
     if object is None:
         magic_objects.clear()
+        active_objects.clear()
+        object_names.clear()
     elif id(object) in magic_objects:
+        del object_names[magic_objects[id(object)].name]
         del magic_objects[id(object)]
+        if id(object) in active_objects:
+            del active_objects[id(object)]
     else:
         raise ValueError("The object does not have magic turned on.")
 
