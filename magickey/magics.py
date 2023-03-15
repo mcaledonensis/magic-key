@@ -15,15 +15,18 @@ import openai, os, getpass, json
 from notebook.utils import to_api_path
 from .engine import on, turn_on, prompt, name_to_object
 
-
 @magics_class
-class Arthur(Magics):
+class KeyMagics(Magics):
     """"This is the magics for Arthur-type intelligence. """
 
     def __init__(self, shell, **kwargs):
         super().__init__(shell, **kwargs)   
+        self.shell = shell
+        shell.events.register('post_run_cell', self.post_run_cell)
+
         self.name = "Arthur"            # Default Arthur-type AGI name
         self.actor = "Merlin"           # Default user name
+        self.watched = set()
              
 
     @line_magic
@@ -31,12 +34,15 @@ class Arthur(Magics):
         "Instantiate the AGI"
 
         # Default initialization with Arthur as intelligence
-        self.actor, input = line[5:-4].split(':%* ', maxsplit = 1)
+        self.actor, input = line[5:-4].split(':@', maxsplit = 1)
+        if input == input.lstrip():
+            self.name, input = input.split(maxsplit = 1)
+
         if not on(self):
             turn_on(self, actor = self.actor, engine = 'openai')
-            # print("username:", actor)
 
-            # TODO: use input
+            if input:
+                self.prompt(self, "@{self.name}", input)
 
 
 
@@ -45,7 +51,7 @@ class Arthur(Magics):
     @line_magic
     def prompt(self, line):
         "Identifies and executes the prompt for: @object prompt"
-        name, input = line[6:-4].split(maxsplit = 1)      # @object Prompt 
+        name, input = line[5:-4].split(maxsplit = 1)      # @object Prompt 
         # execute object.prompt(text) and return the result    
 
         object = name_to_object(name)
@@ -54,7 +60,6 @@ class Arthur(Magics):
             request, response = prompt(object, input, actor = self.actor)
 
             # TODO: correct the actor name
-            assert(name == self.name)
             lines,final = arthur_to_python(response, self.actor, name)
 
             # format the results as ChartML
@@ -69,7 +74,41 @@ class Arthur(Magics):
         elif name == self.actor:
             return Markdown(input)
         else:
-            raise ValueError(f"Unknown actor: {actor}")
+            raise ValueError(f"Unknown prompt target @{name}. Suggestion: check %who or use Python syntax to call the object directly.")
+
+
+    def post_run_cell(self, result):
+        if isinstance(result.result, Markdown):
+            if result.result.data.startswith('```python\n'):
+                code = result.result.data.split('\n```', maxsplit = 1)[0][10:]
+                self.watched.add(result.execution_count + 1)
+                add_code_cell(code, execute = True)
+            elif result.result.data.startswith('```\n'):        # This is a hack to handle the final output prompt
+                code = result.result.data.split('\n```', maxsplit = 1)[0][4:]
+                add_code_cell(code, execute = True)
+
+
+        if result.execution_count in self.watched:
+            self.watched.remove(result.execution_count)
+
+            formatted_cell = f'In [{result.execution_count}]: {result.info.raw_cell}'
+            if result.result is not None:
+                formatted_cell += f'\nOut [{result.execution_count}]: {result.result}'
+            elif result.error_in_exec is not None:
+                from IPython.core.ultratb import AutoFormattedTB
+                color_tb = AutoFormattedTB(mode = 'Plain', color_scheme = 'NoColor', tb_offset = 1)
+                tb_list = color_tb.structured_traceback(etype = type(result.error_in_exec), value = result.error_in_exec, tb = result.error_in_exec.__traceback__)
+                tb_str = '\n'.join(tb_list)
+                
+                #error_type = type(result.error_in_exec).__name__
+                #formatted_cell += f'\n{error_type}: {result.error_in_exec}'
+                formatted_cell += f'\n{tb_str}'
+            elif result.error_before_exec is not None:
+                error_type = type(result.error_before_exec).__name__
+                formatted_cell += f'\n{error_type}: {result.error_before_exec.msg} in {result.error_before_exec.text}'
+                        
+            code = f"@{self.name}\n" + formatted_cell
+            add_code_cell(code, execute = True)
 
 
 
@@ -217,7 +256,7 @@ class ArthurVisitor(NodeVisitor):
     def visit_response(self, node, visited_children):
         text = node.text.strip()
         if text:
-            self.code_lines.append(f'@{self.actor} {node.text}')
+            self.code_lines.append(f'%prompt {self.actor} -a {self.name} r"""{node.text}"""')
 
     def visit_hashtag(self, node, visited_children):
         self.code_lines.append('%hashtag ' + node.text)   
@@ -250,17 +289,17 @@ def prompt_to_python(lines):
     for line in lines:
         if its_a_prompt:
             new_lines[-1] += line
-        elif ':%* ' in line:
-            new_lines.append('%asterisk (r"""' + line)
+        elif ':@' in line:
+            new_lines.append('%asterisk r"""' + line)
             its_a_prompt = True
         elif line.startswith('@'):
-            new_lines.append('%prompt (r"""' + line)
+            new_lines.append('%prompt r"""' + line)
             its_a_prompt = True
         else:
             new_lines.append(line)
 
     if its_a_prompt:
-        new_lines[-1] += '""")'
+        new_lines[-1] += '"""'
 
     # print(new_lines)
 
@@ -401,38 +440,6 @@ class CellWatcher(object):
         self.watched = set()
 
 
-    def post_run_cell(self, result):
-        if isinstance(result.result, Markdown):
-            if result.result.data.startswith('```python\n'):
-                code = result.result.data.split('\n```', maxsplit = 1)[0][10:]
-                self.watched.add(result.execution_count + 1)
-                add_code_cell(code, execute = True)
-            elif result.result.data.startswith('```\n'):        # This is a hack to handle the final output prompt
-                code = result.result.data.split('\n```', maxsplit = 1)[0][4:]
-                add_code_cell(code, execute = True)
-
-
-        if result.execution_count in self.watched:
-            self.watched.remove(result.execution_count)
-
-            formatted_cell = f'In [{result.execution_count}]: {result.info.raw_cell}'
-            if result.result is not None:
-                formatted_cell += f'\nOut [{result.execution_count}]: {result.result}'
-            elif result.error_in_exec is not None:
-                from IPython.core.ultratb import AutoFormattedTB
-                color_tb = AutoFormattedTB(mode = 'Plain', color_scheme = 'NoColor', tb_offset = 1)
-                tb_list = color_tb.structured_traceback(etype = type(result.error_in_exec), value = result.error_in_exec, tb = result.error_in_exec.__traceback__)
-                tb_str = '\n'.join(tb_list)
-                
-                #error_type = type(result.error_in_exec).__name__
-                #formatted_cell += f'\n{error_type}: {result.error_in_exec}'
-                formatted_cell += f'\n{tb_str}'
-            elif result.error_before_exec is not None:
-                error_type = type(result.error_before_exec).__name__
-                formatted_cell += f'\n{error_type}: {result.error_before_exec.msg} in {result.error_before_exec.text}'
-                        
-            code = "@Arthur\n" + formatted_cell
-            add_code_cell(code, execute = True)
 
 
             
@@ -462,15 +469,10 @@ def load_ipython_extension(ipython):
     can be loaded via `%load_ext module.path` or be configured to be
     autoloaded by IPython at startup time.
     """
-    # You can register the class itself without instantiating it.  IPython will
-    # call the default constructor on it.
-    ipython.register_magics(Arthur)
+
+    # IPython will call the default constructor on it.
+    ipython.register_magics(KeyMagics)
 
     # Add as first element of the list of input transformers
     ipython.input_transformers_cleanup.insert(0, prompt_to_python)
-
-    vw = CellWatcher(ipython)
-    ipython.events.register('post_run_cell', vw.post_run_cell)
-
-    # ipython.input_transformers.append(arthur_to_python)
 

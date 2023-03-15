@@ -10,7 +10,7 @@ Examples:
 >>> turn_on(Archimedes, 
 ...         init = "I'm playing with a young human child, his name is Arthur.",
 ...         actor = 'Arthur',
-...         runtime = 'finite',
+...         steps = 1,
 ...         engine = 'echo',
 ...        )
 
@@ -137,70 +137,73 @@ def name_to_object(name):
     """ Returns the object with the given name. Returns None if the object is not registered. """
     return object_names.get(name, None)
 
-def turn_on(object, init='', actor='User', name = None, active=True,
-            runtime='finite', engine='openai', api_key=None, magic_type=True):
+def turn_on(object, init=None, actor='User', name=None, active=True,
+            steps=None, engine='openai', api_key=None, auto_prompt=False, magic_type=True):
     """
     Activates the connector between the python interpreter and intellegence engine.
-    :param object: The object for which magic is to be turned on. Should have a name field.
-    :param name: 
-    :param active:
+    :param object: The object for which magic is to be turned on.
     :param init: The initial state of the object, describing the context.
-    :actors: Other actors, besides the object. The first actor in the list is assumed to be the main user. 
+    :param actor: Prompting actor that instantiated the object. 
+    :param name: The name of the object. If not specified, the name is taken from the object.
+    :param active: If True, the object can actively react on the top level thread.
+    :param steps: Can be None, or a number, including inf. Specifies how many cells the object can create and run at a time.
     :param engine: Can be None, 'openai', 'magickey'
     :param api_key: Can be None, or the API key for the engine.
+    :param auto_prompt: If True, the shell prompt is added automatically in the new cell.
     :param magic_type: Can be None, False or True. Specifies the type of magic.
 
     Example:
         magickey.turn_on(Archimedes, 
                  init = "I'm playing with a young human child, his name is Arthur.",
                  actor = 'Arthur',
-                 runtime = 'finite'
+                 steps = float('inf')
                 )
     """
 
     if id(object) in magic_objects:
         raise ValueError("The object already has magic turned on.")
-    
-    class I:
-        pass
 
     # Determines the name of the object
-    if name is not None:
-        I.name = name
-    elif hasattr(object, 'name'):
-        I.name = object.name
-    else:
-        raise AttributeError("The object must have a name field or name should be defined to be used with magickey")
+    if name is None:
+        if not hasattr(object, 'name'):
+            raise AttributeError("The object must have a name field or name should be defined to be used with magickey")
+        name = object.name
 
-    if I.name in object_names:
+    if name in object_names:
         raise ValueError("The object name is already registered.")
 
     if init is None:
-        init = "Interacting with %s." % actor
+        init = object.init if hasattr(object, 'init') else f"Interacting with {actor}." 
 
-    
-    if hasattr(object, 'about'):
-        I.about = object.about
-    else:
-        I.about = f"I'm Arthur-type intelligence acting as {I.name}."
-        if hasattr(object, 'embodiment'):
-            I.about += f" I'm currently embodied as {object.embodiment}."
+    about = object.about if hasattr(object, 'about') else f"I'm Arthur-type intelligence acting as {name}."
+    about += f" I'm currently embodied as {object.embodiment}." if hasattr(object, 'embodiment') else ""
+
+
+    # Creates the magic object attributes
+    class I:
+        pass
+
+    I.name = name
+    I.about = about
+    I.init = init
+    I.actor = actor
+    I.steps = steps
+    I.auto_prompt = auto_prompt
+
 
     prompt_txt = pkg_resources.read_text(prompts, 'prompt.txt')
 
     I.messages = [
         {"role": "system", "content": prompt_txt},
-        {"role": "system", "content": ' '.join([I.about, init])},
+        {"role": "system", "content": ' '.join([I.about, I.init])},
         ]
-    
-    I.actor = actor
 
     if engine == 'openai':
         I.engine = EngineOpenAI(api_key)
     elif engine == 'echo':
         I.engine = EngineEcho(api_key)
     else:
-        raise ValueError("Unknown engine: %s" % engine)
+        raise ValueError(f"Unknown engine: {engine}")
 
     magic_objects[id(object)] = I
     object_names[I.name] = object

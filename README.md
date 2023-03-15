@@ -2,6 +2,9 @@
 
 This module provides iPython integration and magics that allow exact, inexact and intellegent code execution.
 
+## Requirements
+
+Jupyter Notebook, version 8+.
 
 ## Install
 
@@ -9,33 +12,95 @@ This module provides iPython integration and magics that allow exact, inexact an
 %pip install magickey
 ```
 
-
 ## Getting started
+
+Open the Jupyter notebook and import the module to activate the iPython extension. 
+Make sure that OPENAI_API_KEY is defined. And turn the magic on:
+
+```
+import magickey
+
+class Assistant:
+    name = 'Assistant'
+    init = 'I'm acting as a helpful assistant.'
+
+magickey.turn_on(Assistant, actor = 'User', steps = 0)
+```
+
+With the extension active a '@' decorator can now be used to prompt the object with text:
+```
+@Assistant
+Please, use numpy to calculate 42^2 for me?
+```
+
+That prompt will be processed by the AI model, which would emit a reply containing prompts to User
+and other objects, including iPython interpreter.  The reply will be processed by magickey. 
+And results will be translated into a *new* code block, added to Jupyter.  
+
+For example, Assistant could add the following code:
+
+```
+import numpy
+numpy.power(42, 2)
+```
+
+The execution of that codeblock is *watched* by the Assistant (the object that emitted this code block). 
+Upon it's execution (you have an opportunity to review code that Assistand had emitted as steps = 0) the
+Assistant is prompted *again* and may emit another *new* code block, for example prompting the User object:
+
+```
+@User
+The result is 1764.
+```
+
+That code, when executed, is a prompt of the User.  Which, by default, results in a Markdown output\
+_The result is 1764_
+
+
+## Interactive prompting
 
 Open the Jupyter notebook and import the module to activate the iPython extension:
 ```
 import magickey
 ```
 
-The default initialization is available through the `%*` magic. Your name should be specifiend in the front, like in the shell prompt:
+
+The * magic command is used to initialize the system to its default setting. To start, you 
+need to specify *your* name (for example Lancelot) at the front of the prompt like you would 
+in a shell prompt. As an option you can also specify the AI name (for example Arthur):
+
 ```
-Lancelot:%* Salutations, young squire.
+Lancelot:@Arthur* Salutations, young squire.
 ```
 
-This will instantiate a new default `I` instance of Arthur-type intellegence, using the default name Arthur.
-If the system is operational, you'll see a few hidden cells followed by the response, for example:
+This will instantiate a new default `I` instance of Arthur-type intelligence, using the name Arthur.
+If the system is operational, you should see a few hidden cells followed by a response, like this:
 
 ```
 Arthur: Salutations, Sir Lancelot.
 ```
 
-And a new prompt:
+You will then see a new prompt:
 ```
-Lancelot:%* _
+Lancelot:@Arthur* _
 ```
 
-Type your queries or requests, these will be processed. Note that `%*` magic allows a single code cell run.
-To allow finite loop runtime add another asterisk into the prompt `%**`. Use three asterisk for an infinite loop.
+You can type in your queries or requests, and the system will process them. Note that the :* magic 
+command only allows a single code cell run. If you need to allow for finite loop runtime, add another 
+asterisk into the prompt like this: :**. Use three asterisks for an infinite loop. Use no asterisks
+for stepping (executing cells manually).
+
+Note that the formal prompt syntax is `[prompting magic object]:[@prompted magic object][*][*][*] [text]` and the defaults
+used at the instantiation time will apply to prompts where the fields were left unspecified. So the shortcut for 
+the above prompt would be: 
+```:* ```.
+
+Another prompting contraction is available with the `[@prompted magic object][*][*][*] [text]` syntax. This uses 
+a default single code cell run if the asterisk is not included. For example, you can use ```@Arthur Hi``` as an 
+another shortcut for prompting the system. This type of a shortcut is useful when prompting objects other than the default.
+
+Note, when the cell containing the above prompts is executed, the following magic
+`%prompt [prompted object] [--actor|-a <prompting object>] <statement>` is called.
 
 
 ## Adding your own classes
@@ -48,15 +113,18 @@ for example:
 ```
 import magickey
 
-class Archimedes:
-    name = 'Archimedes'
-    embodiment = 'Small and safe robotic owl, weight 180 g'
-    
-magickey.turn_on(Archimedes, 
-                 init = "I'm playing with a young human child",
-                 actors = 'Arthur',
-                 runtime = 'finite'
-                )
+>>> class Archimedes:
+...    name = 'Archimedes'
+...    embodiment = 'Small and safe robotic owl, weight 180 g'
+...    abilities = 'flying, talking, and playing with children'
+>>>    
+>>> turn_on(Archimedes, 
+...         init = "I'm playing with a young human child, his name is Arthur.",
+...         actor = 'Arthur',
+...         steps = float(inf),
+...         engine = 'echo',
+...         shell = 'on'
+...        )
 ```
 
 In the example above, Archimedes will be instantiated. Note that Artur is specified as the party Archimedes 
@@ -68,7 +136,7 @@ Archimedes: Salutations, Arthur. It seems that every time I open my eyes, you ar
 ```
 
 ```
-Arthur:%** _
+Arthur:@Archimedes* _
 ```
 
 Note that the prompt would match last runtime setting, either specified or used.
@@ -89,7 +157,22 @@ magickey.turn_off()
 or with an null magic call, which annuls all magics and brings the system to initial state:
 ```
 %*
+
 ```
+
+### Defining functionality
+
+```
+class Glip:
+    name = 'Glip'
+    
+magickey.turn_on(Glip, 
+                 init = "I'm observing and remembering everything and reply 'glip' on every prompt",
+                 steps = 1e10
+                )
+
+```
+
 
 ### Uploading logs and the notebook
 
@@ -119,8 +202,8 @@ import magickey, drawbot_skia.drawbot as drawbot
 
 And prompt the interaction, you will be able to have your fun with that python module using a prompt, for example:
 ```
-William:%* Good morrow, young squire. Pray, could you draw a picture of a feline for me 
-            using the `drawbot` module? I would be much obliged.
+William:@Arthur* Good morrow, young squire. Pray, could you draw a picture of a 
+                 feline for me using the `drawbot` module? I would be much obliged.
 ```
 
 Hopefully, you'll get a helpfull response from Arthur-type intellegence, acting as Arthur:
