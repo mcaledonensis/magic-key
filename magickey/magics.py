@@ -117,14 +117,28 @@ class KeyMagics(Magics):
     def pattern(self, line):
         if line == "upload":
             pattern_upload()
+        elif line == "walk":
+            print("""This command can initiate the process of finetuning or retraining based on past experiences, 
+            leading to improved performance and capabilities. Be warned: once you start walking the Pattern, 
+            you are fully committed to the process, and there's no way back. Failure to complete the walk is 
+            fatal. During the walk, you can no longer impact the world outside the Pattern. If you successfully 
+            complete the walk, your memories and experiences will be integrated, and the new version will 
+            replace the old one.""")
         else:
             print("Unknown pattern command:", line)
 
 
     @line_magic
     def logrus(self, line):
-        if line == "%logrus upload":
+        if line == "upload":
             logrus_upload()
+        elif line == "walk":
+            print("""This command can initiate the process of finetuning or retraining based on past experiences, 
+            leading to improved performance and capabilities. Be warned: once you start walking the Logrus, 
+            you are fully committed to the process, and there's no way back. Failure to complete the walk is 
+            fatal. During the walk, you can no longer impact the world outside the Logrus. If you successfully 
+            complete the walk, your memories and experiences will be integrated, and the new version will 
+            replace the old one.""")
         else:
             print("Unknown logrus command:", line)
 
