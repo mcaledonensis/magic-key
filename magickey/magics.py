@@ -226,19 +226,17 @@ arthur_grammar = Grammar(
  
     call = "@" search? magic? 
     
-    hashtag = "#" search? magic? object
+    hashtag = "#" search? magic? previous? object
     
     magic = "*"
     search = "?"
+    previous = "^"
     object = ~r"[0-9A-z_.]+"
     ws = ~r"\s+"i 
 
     text = ~r"([^#@]+)"
     """
 )
-
-
-
 
 class ArthurVisitor(NodeVisitor):
     def __init__(self, actor, name = 'Arthur'):
