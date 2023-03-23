@@ -37,27 +37,59 @@ active_objects = {}
 object_names = {}
 
 class EngineOpenAI:
-    def __init__(self, api_key = None):
+    def __init__(self, api_key = None, model = 'gpt-3.5-turbo'):
         if api_key is None:
             api_key = os.getenv("OPENAI_API_KEY") 
-
-        if api_key is None:
+        elif api_key is None:
             with open("/etc/.openai.merlin.key", 'rt') as f:
                 if f is not None: api_key = f.read().strip()
         else:
             raise ValueError("OpenAI API key is required.")
         
         openai.api_key = api_key
+        self.model = model
 
-    def prompt(self, prompt, actors):
-        response = openai.Completion.create(
-            model="text-davinci-003",
-            prompt=prompt,
-            temperature=0.6,
-            max_tokens=100,
-            stop = [f"{actor}:" for actor in actors[:4]] if actors else None,
-        )
+    def prompt(self, messages, actors):
+        """ Executes the prompt and returns the result.
+            messages: list of messages, each message is a dictionary with keys 'role', 'content', 'name'
+                      last message is the one that needs to be completed ['assistant' role]  
+            actors: list of actors, each actor is a string
+        """
 
+        if self.model == 'text-davinci-003':
+            prompt = ""
+            for message in messages:
+                if message['role'] == 'system':
+                    prompt += message['content'] + '\n'
+
+                else:
+                    prompt += '\n' + message['name'] +  ": " + message['content']
+
+            response = openai.Completion.create(
+                model="text-davinci-003",
+                prompt=prompt,
+                temperature=0.6,
+                max_tokens=100,
+                stop = [f"{actor}:" for actor in actors[:4]] if actors else None,
+            )
+            return response.choices[0].text
+
+        elif self.model.startswith('gpt-'):
+            # Note, the messages are filtered to remove the last message, which is the one that needs to be completed.
+            prompt = []
+            for message in messages[:-1]:
+                if message['role'] == 'system':
+                    prompt.append({"role" : message["role"], "content": message["content"]})
+                else:
+                    prompt.append({"role" : message["role"], "content": message['name'] +  ": " + message['content']})
+
+            response = openai.ChatCompletion.create(
+                    model=self.model,                
+                    messages=prompt,
+                )
+            return response.choices[0]["message"]["content"]
+        else:
+            raise ValueError("Unknown model: " + self.model)
         # Note, it is fine that the response could contain prediction of responces for other parts of the system.
         # It doesn't mean that these predictions will be used, the prediction then can be compared with the
         # actual response and the AI can be notified and, if beneficial, finetuned, to improve its predictions!
@@ -65,10 +97,9 @@ class EngineOpenAI:
         # As human we are similar in that and we predict the next word in the sentence. When the word is not what we
         # expect, we are surprised. We can use this to our advantage. We can use the surprise to improve the AI.        
         # When the actual response is different from the predicted one, we'll tag it with #surprise.
+        pass
 
-        print (prompt, response.choices[0].text)
 
-        return response.choices[0].text
 
 class EngineEcho:
     def __init__(self, api_key = None):
@@ -112,19 +143,7 @@ def prompt(object, input, actor = None):
 
     I.messages.append({'role': 'user', 'content': input, 'name': actor})
     I.messages.append({'role': 'assistant', 'name': I.name, 'content': ''})
-
-    prompt = ""
-    for message in I.messages:
-        if message['role'] == 'system':
-            prompt += message['content'] + '\n'
-
-        else:
-            prompt += '\n' + message['name'] +  ": " + message['content']
-
-    #print(prompt)
-
-    result = I.engine.prompt(prompt, actors)
-
+    result = I.engine.prompt(I.messages, actors)
     I.messages[-1]['content'] = result
     return I.messages, result
 
@@ -175,8 +194,9 @@ def turn_on(object, init=None, actor='User', name=None, active=True,
     if init is None:
         init = object.init if hasattr(object, 'init') else f"Interacting with {actor}." 
 
-    about = object.about if hasattr(object, 'about') else f"I'm Arthur-type intelligence acting as {name}."
-    about += f" I'm currently embodied as {object.embodiment}." if hasattr(object, 'embodiment') else ""
+    about = object.about if hasattr(object, 'about') else f"Please, I'd like you to use a name {name}."
+    about += f"{name} is embodied as {object.embodiment}." if hasattr(object, 'embodiment') else ""
+    about += f"{name} is using Articoder capabilities."
 
 
     # Creates the magic object attributes
@@ -191,11 +211,13 @@ def turn_on(object, init=None, actor='User', name=None, active=True,
     I.auto_prompt = auto_prompt
 
 
-    prompt_txt = pkg_resources.read_text(prompts, 'prompt.txt')
+    system_prompt_txt = pkg_resources.read_text(prompts, 'system_prompt.txt')
+    meta_prompt_txt = pkg_resources.read_text(prompts, 'meta_prompt.txt')
 
     I.messages = [
-        {"role": "system", "content": prompt_txt},
-        {"role": "system", "content": ' '.join([I.about, I.init])},
+        {"role": "system", "content": system_prompt_txt},
+        {"role": "user", "content": meta_prompt_txt},
+        {"role": "user", "content": ' '.join([I.about, I.init])},       # prompt
         ]
 
     if engine == 'openai':
