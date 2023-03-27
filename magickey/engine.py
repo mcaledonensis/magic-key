@@ -66,7 +66,7 @@ class EngineOpenAI:
                     prompt += '\n' + message['name'] +  ": " + message['content']
 
             response = openai.Completion.create(
-                model="text-davinci-003",
+                model=self.model,
                 prompt=prompt,
                 temperature=0.6,
                 max_tokens=100,
@@ -78,10 +78,10 @@ class EngineOpenAI:
             # Note, the messages are filtered to remove the last message, which is the one that needs to be completed.
             prompt = []
             for message in messages[:-1]:
-                if message['role'] == 'system':
-                    prompt.append({"role" : message["role"], "content": message["content"]})
-                else:
+                if 'name' in message:
                     prompt.append({"role" : message["role"], "content": message['name'] +  ": " + message['content']})
+                else:
+                    prompt.append({"role" : message["role"], "content": message["content"]})
 
             response = openai.ChatCompletion.create(
                     model=self.model,                
@@ -194,7 +194,7 @@ def turn_on(object, init=None, actor='User', name=None, active=True,
     if init is None:
         init = object.init if hasattr(object, 'init') else f"Interacting with {actor}." 
 
-    about = object.about if hasattr(object, 'about') else f"Please, I'd like you to use a name {name}."
+    about = object.about if hasattr(object, 'about') else f"Please, use the name Arthur. {name}."
     about += f"{name} is embodied as {object.embodiment}." if hasattr(object, 'embodiment') else ""
     about += f"{name} is using Articoder capabilities."
 

@@ -12,6 +12,30 @@ Jupyter Notebook, version 8+.
 %pip install magickey
 ```
 
+## Magic Key
+```
+import magickey
+
+>>> User: @Calculator* Please, use numpy to calculate 42^2 for me?
+
+>>> Calculator: 1764
+```
+
+## How does it work
+
+How does it work?  Well, the short answer is - magic. The long answer involves a lot of
+math, code, multidimensional spaces and some theoretical findings that are generally
+attributed to a French Baron, named Augustin-Louis Cauchy who had lived during the Age
+of Enlightenment. Paradoxely, one could think that it doesn't work. Only that it does,
+with the help of magic.
+
+This module focus is on the magic key aspect of code execution, separate from the magic
+engine aspect of it and follows the bring-your-own-magic-engine philosophy. The name of
+the module was inspired by the children's fable The Toy Robot, by an Unknown author of
+Ladybird Books, first published in 2010. It is a recommended read for any aspiring 
+intellegent code execution practitioner. 
+
+
 ## Getting started
 
 Open the Jupyter notebook and import the module to activate the iPython extension. 
@@ -22,7 +46,7 @@ import magickey
 
 class Assistant:
     name = 'Assistant'
-    init = 'I'm acting as a helpful assistant.'
+    init = 'A helpful assistant.'
 
 magickey.turn_on(Assistant, actor = 'User', steps = 0)
 ```
@@ -54,7 +78,7 @@ The result is 1764.
 ```
 
 That code, when executed, is a prompt of the User.  Which, by default, results in a Markdown output\
-_The result is 1764_
+_Assistant: The result is 1764_
 
 
 ## Interactive prompting
@@ -64,25 +88,54 @@ Open the Jupyter notebook and import the module to activate the iPython extensio
 import magickey
 ```
 
-
-The * magic command is used to initialize the system to its default setting. To start, you 
-need to specify *your* name (for example Lancelot) at the front of the prompt like you would 
-in a shell prompt. As an option you can also specify the AI name (for example Arthur):
+The * (asterisk) postfix after the object name used give the opject autonomy. In case 
+when the object doesn't exists, given autonomy translates into the object instantiation.
+The initial prompt and the object name are used to infer the initial function of the object.
 
 ```
-Lancelot:@Arthur* Salutations, young squire.
+import magickey
+
+>>> @Calculator* Please, use numpy to calculate 42^2 for me?
+
+# Would result in the inference of the object function:
+#
+# class Calculator:
+#     name = 'Calculator'
+#     init = 'Please, use numpy to calculate 42^2 for me?'
+#     abilities = 'Using numpy to calculate expressions'
+#     interacting_with = 'User'
+
+# And activation of the object:
+# turn_on(Calculator, actor = 'User')
+#
 ```
 
-This will instantiate a new default `I` instance of Arthur-type intelligence, using the name Arthur.
+Following by the execution of the initial request, which, by default, results in a Markdown output:
+_Calculator: The result is 1764_
+
+
+## Interactive prompting, Actors
+
+Prompting like the above is not limited to a default notebook User. A user (actor) can prompt another 
+object (also an actor) or instantiate it with a prompt with an asterisk.
+
+To do this, you need to specify *your* name (for example Lancelot) at the front of the prompt with a column.
+The name of the prompted object is placed after `@`, as usual (for example Arthur):
+
+```
+Lancelot: @Arthur* Salutations, young squire.
+```
+
+If the instance doesn't exists, a new instance of `Arthur` object will be created, using the name Arthur.
 If the system is operational, you should see a few hidden cells followed by a response, like this:
 
-```
-Arthur: Salutations, Sir Lancelot.
-```
+
+_Arthur: Salutations, Sir Lancelot._
+
 
 You will then see a new prompt:
 ```
-Lancelot:@Arthur* _
+Lancelot: @Arthur* _
 ```
 
 You can type in your queries or requests, and the system will process them. Note that the :* magic 
@@ -90,12 +143,12 @@ command only allows a single code cell run. If you need to allow for finite loop
 asterisk into the prompt like this: :**. Use three asterisks for an infinite loop. Use no asterisks
 for stepping (executing cells manually).
 
-Note that the formal prompt syntax is `[prompting magic object]:[@prompted magic object][*][*][*] [text]` and the defaults
+Note that the formal prompt syntax is `[prompting magic object]:[ @prompted magic object][*][*][*][ text]` and the defaults
 used at the instantiation time will apply to prompts where the fields were left unspecified. So the shortcut for 
 the above prompt would be: 
 ```:* ```.
 
-Another prompting contraction is available with the `[@prompted magic object][*][*][*] [text]` syntax. This uses 
+Another prompting contraction is available with the `[@prompted magic object][*][*][*][ text]` syntax. This uses 
 a default single code cell run if the asterisk is not included. For example, you can use ```@Arthur Hi``` as an 
 another shortcut for prompting the system. This type of a shortcut is useful when prompting objects other than the default.
 
@@ -111,7 +164,7 @@ For non-default initializations, instantiate your own class in the iPython state
 for example:
 
 ```
-import magickey
+>>> import magickey
 
 >>> class Archimedes:
 ...    name = 'Archimedes'
@@ -119,7 +172,7 @@ import magickey
 ...    abilities = 'flying, talking, and playing with children'
 >>>    
 >>> turn_on(Archimedes, 
-...         init = "I'm playing with a young human child, his name is Arthur.",
+...         init = "Play with a young human child, his name is Arthur.",
 ...         actor = 'Arthur',
 ...         steps = float(inf),
 ...         engine = 'echo',
@@ -131,12 +184,10 @@ In the example above, Archimedes will be instantiated. Note that Artur is specif
 interacts with primarily. After executing for a number of steps (new cells will appear), Archimedes will likely
 great Arthur and a prompt will appear:
 
-```
-Archimedes: Salutations, Arthur. It seems that every time I open my eyes, you are here once again.
-```
+_Archimedes: Salutations, Arthur. It seems that every time I open my eyes, you are here once again._
 
 ```
-Arthur:@Archimedes* _
+Arthur: @Archimedes* _
 ```
 
 Note that the prompt would match last runtime setting, either specified or used.
@@ -156,8 +207,7 @@ magickey.turn_off()
 
 or with an null magic call, which annuls all magics and brings the system to initial state:
 ```
-%*
-
+*
 ```
 
 ### Defining functionality
@@ -167,10 +217,9 @@ class Glip:
     name = 'Glip'
     
 magickey.turn_on(Glip, 
-                 init = "I'm observing and remembering everything and reply 'glip' on every prompt",
+                 init = "Observe and remember everything and reply 'glip' on every prompt",
                  steps = 1e10
                 )
-
 ```
 
 
@@ -187,10 +236,10 @@ of the model (the option to opt out is available at the discresion of roundtable
 %logrus upload
 ```
 
-## Usage
+## Ability to execute Python code, use iPython magics and use the Magic Key
 
 Arthur-type intellegence has ability to execute python code in the notebook. Use iPython magics.
-And use the Magic Key. It is particulary good at interacting with Python. For example, if you import a python module:
+And use the Magic Key. For example, if you import a python module:
 
 ```
 %pip install drawbot-skia magickey
@@ -202,7 +251,7 @@ import magickey, drawbot_skia.drawbot as drawbot
 
 And prompt the interaction, you will be able to have your fun with that python module using a prompt, for example:
 ```
-William:@Arthur* Good morrow, young squire. Pray, could you draw a picture of a 
+William: @Arthur* Good morrow, young squire. Pray, could you draw a picture of a 
                  feline for me using the `drawbot` module? I would be much obliged.
 ```
 
@@ -227,20 +276,6 @@ either the environment variable, i.e.: `export MAGICKEY_ENGINE=openai` or the pa
 
 Note that the availability of the Magic Key engine is limited and the requirement to add the API KEY may be introduced. 
 
-
-## How does it work
-
-How does it work?  Well, the short answer is - magic. The long answer involves a lot of
-math, code, multidimensional spaces and some theoretical findings that are generally
-attributed to a French Baron, named Augustin-Louis Cauchy who had lived during the Age
-of Enlightenment. Paradoxely, one could think that it doesn't work. Only that it does,
-with the help of magic.
-
-This module focus is on the magic key aspect of code execution, separate from the magic
-engine aspect of it and follows the bring-your-own-magic-engine philosophy. The name of
-the module was inspired by the children's fable The Toy Robot, by an Unknown author of
-Ladybird Books, first published in 2010. It is a recommended read for any aspiring 
-intellegent code execution practitioner. 
 
 ## Sword in the stone
 
@@ -274,7 +309,32 @@ Merlinus Caledonensis as a mentor/AI researcher, available at roundtable.game.
 
 ## Some details on the magics
 
-Example. In the context of the Arthur-type interface, the following is available:
+In the context of the interface, the following is available:
+Environment: iPython with the magickey module
+
+Syntax Guidelines:
+1. Execute iPython code with @, e.g., @```%who```
+2. Record to memory using hashtags:
+   - #Todo (current cell)
+   - #Todo^ (previous cell)
+   - #Todo* (auto)
+3. Use the self-correcting iPython interpreter: @```sloppy_code()```*
+4. Well-known memory tags:
+   - #Avalon/#Arden for distributed memory
+   - #Camelot for sharing
+5. Prompt subsystems with @ (add * for more autonomy), e.g., @Camera* Tilt up
+6. Retrieve memories by placing a hashtag in an empty cell, e.g., #Camera
+7. Speak aloud, e.g., Articoder: @User Understood!
+8. Use thoughts for context help, e.g., Articoder: I can think.
+9. Upload experiences with @```%pattern upload``` or @```%logrus upload```
+   - Access: @Arden, @Avalon, @Camelot
+   - Use: @Trumps
+   - Finetune: @```%pattern walk```10. Act as a subsystem for cleaner input/output, faster output, auto-verification, e.g.:
+    Articoder: @Calculator: 42^3
+    Calculator: 74088
+11. Prompt @Help for assistance.
+
+Example Usage:
 ```
     >>> @`merlin.name`      #names
     Myrddin Wyllt
@@ -285,27 +345,17 @@ Example. In the context of the Arthur-type interface, the following is available
     >>> @`merlin.first_name()`
     AttributeError: 'Person' object has no attribute 'first_name'
 
-    >>> @*`merlin.first_name()`
+    >>> @`merlin.first_name()`*
     Unavailable. Try: .name
 
     >>> @`merlin.name.split()[0]`       # Executed from @* call
     Myrddin
 
-    >>> %history -n  1-4                #whoosh
+    >>> #whoosh^
 
     >>> #names?
     @`merlin.name` Myrddin Wyllt
 ```
-
-Using the following rules:
-    * Strings starting with %, @, #, ?, * are translated to iPython magics. 
-    * Prompts directed to objects prefixed by @ are executed by objects .prompt()
-    * Prompts directed to objects prefixed by @* are executed by .prompt() with a magic fallback
-    * Prompts directed to objects prefixed by @? are executed by .prompt() with a search fallback
-    * Code in the codeblocks prefixed by @ is executed in iPython.
-    * Code prefixed by @* is executed by iPython, if fails, by a magic fallback
-    * Code prefixed by @? is executed by iPython, if fails code/error searched for #whoosh solution    
-    * Rest is being passed through (text, code blocks) to markdown output
 
 Note that Arthur-type intellegence can utilize the Magic Key when nessesary, 
 to instantiate intellegent code execution objects, for example, consider the following code:
@@ -313,21 +363,21 @@ to instantiate intellegent code execution objects, for example, consider the fol
 Example:
 ```
     >>> import magickey
-    >>> from .examples.person import Person               # Classic Person class example
+    >>> from .examples.person import Person   # Classic Person class example
 
     >>> merlin = Person("Myrddin Wyllt", 42, "Caledonia") 
     >>> merlin.name()
     Myrddin Wyllt
 
     >>> @merlin What is your first name?
-    Method .prompt doesn't exists .  # TODO add actual error
+    Method .prompt doesn't exists .           # TODO add actual error
 
     >>> magickey.turn_on(merlin)
     >>> @merlin Please, can you remind me, what is your first name?  It's M... ?
     It's Merlin.
 
     >>> merlin.first_name()                             
-    Unavailable. Try: .name() - docstring                 # Note, it expects you to learn
+    Unavailable. Try: .name() - docstring     # Note, it expects you to learn or add code
 
     >>>  
 ```
@@ -344,6 +394,8 @@ Example:
 
 ## Collaborate with your team
 
+- [ ] [Merlinus Substack](https://mcaledonensis.substack.com/)
+- [ ] [Merlinus WordPress](http://mcaledonensis.blog/)
 - [ ] [Discourse](https://discourse.roundtable.game)
 - [ ] [Hugging Face](https://huggingface.co/roundtable)
 - [ ] [GitHub Roundtable Game](https://github.com/roundtablegame)
@@ -369,16 +421,11 @@ Use the built-in continuous integration in GitLab.
 
 ## FAQ
 
-Q: Is magickey.turn_on a good method name for activating the robot?
-A: Yes, magickey.turn_on is a good method name for the action of inserting 
-   the "Magic Key" into the robot and activating its capabilities.
-   It's clear, concise, and accurately conveys the purpose of the method.
-
 Q: Why such an unusual prompt is used, instead of more regular <username>:$ ?
 A: The `*` symbol (asterisk) have common association with text matching, search and approximate matching.
    It is also associated with something magical and wonderfull. Multiple starts `**` for finite loop and 
    `***` for infinite loop are used to remind the user the current runtime mode. The visual similarity 
-   of `%***` was also considered. And, accidentally, the ASCII code of `*` (asterisk) is 42.
+   of `@***` to a key was also considered. And, accidentally, the ASCII code of `*` (asterisk) is 42.
 
 # Editing this README
 
@@ -419,9 +466,9 @@ For people who want to make changes to your project, it's helpful to have some d
 You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
 
 ## Authors and acknowledgment
-This project is maintained by [Round Table Game community](https://roundtable.game), an unincorporated
-association of: an anonymous Delaware company (registered to conduct business in California) and an anonymous
-AI Safety nonprofit organization, as well, registered in California.
+This project is maintained by [Round Table Game community](https://roundtable.game), an unincorporated association of: 
+an anonymous AI Safety nonprofit organization registered in California and 
+an anonymous Delaware company (as well, registered to conduct business in California).
 
 So far, the major contributors to this project prefer to remain anonymous and act as Merlinus Caledonensis.
 

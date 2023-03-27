@@ -34,7 +34,7 @@ class KeyMagics(Magics):
         "Instantiate the AGI"
 
         # Default initialization with Arthur as intelligence
-        self.actor, input = line[5:-4].split(':@', maxsplit = 1)
+        self.actor, input = line[5:-4].split(': @', maxsplit = 1)
         if input == input.lstrip():
             self.name, input = input.split(maxsplit = 1)
 
@@ -220,11 +220,11 @@ arthur_grammar = Grammar(
     language = ~r"[-\w]+" ws
     code = ~r"([^`]+)"
     
-    prompt = call object ws text
+    prompt = call object search? magic? ws text
 
     response = ~r"([^#@]+)"
  
-    call = "@" search? magic? 
+    call = "@" 
     
     hashtag = "#" search? magic? previous? object
     
@@ -296,12 +296,14 @@ def prompt_to_python(lines):
         This transforms lines from human input to to python to filter out %*
     """
 
+    # TODO: use the same grammar as arthur_to_python
+
     # transform name:%* prompt to %asterisk(name, """prompt""")
     new_lines, its_a_prompt = [], False
     for line in lines:
         if its_a_prompt:
             new_lines[-1] += line
-        elif ':@' in line:
+        elif ': @' in line:
             new_lines.append('%asterisk r"""' + line)
             its_a_prompt = True
         elif line.startswith('@'):
