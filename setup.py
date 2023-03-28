@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='magickey',
-      version='0.7',
+      version='0.8',
       description='This module provides iPython integration and magics that allow exact, inexact and intellegent code execution.',
       url='https://gitlab.com/mcaledonensis/magickey',
       author='Merlinus Caledonensis',

@@ -1,6 +1,10 @@
 # Magic Key
 
-This module provides iPython integration and magics that allow exact, inexact and intellegent code execution.
+This module provides iPython integration and magics that allows code omissions.
+
+## Project status - Work In Progress
+
+Refactoring, may not run.
 
 ## Requirements
 
@@ -44,33 +48,33 @@ Make sure that OPENAI_API_KEY is defined. And turn the magic on:
 ```
 import magickey
 
-class Assistant:
-    name = 'Assistant'
-    init = 'A helpful assistant.'
+class Calculator:
+    name = 'Calculator'
+    init = 'A precise Calculator that always uses numpy.'
 
-magickey.turn_on(Assistant, actor = 'User', steps = 0)
+magickey.turn_on(Calculator, actor = 'User', steps = 0)
 ```
 
 With the extension active a '@' decorator can now be used to prompt the object with text:
 ```
-@Assistant
-Please, use numpy to calculate 42^2 for me?
+@Calculator
+Please, calculate 42^2 for me?
 ```
 
 That prompt will be processed by the AI model, which would emit a reply containing prompts to User
 and other objects, including iPython interpreter.  The reply will be processed by magickey. 
 And results will be translated into a *new* code block, added to Jupyter.  
 
-For example, Assistant could add the following code:
+For example, Calculator could add the following code:
 
 ```
 import numpy
 numpy.power(42, 2)
 ```
 
-The execution of that codeblock is *watched* by the Assistant (the object that emitted this code block). 
-Upon it's execution (you have an opportunity to review code that Assistand had emitted as steps = 0) the
-Assistant is prompted *again* and may emit another *new* code block, for example prompting the User object:
+The execution of that codeblock is *watched* by the Calculator (the object that emitted this code block). 
+Upon it's execution (you have an opportunity to review code that Calculator had emitted as steps = 0) the
+Calculator is prompted *again* and may emit another *new* code block, for example prompting the User object:
 
 ```
 @User
@@ -78,7 +82,7 @@ The result is 1764.
 ```
 
 That code, when executed, is a prompt of the User.  Which, by default, results in a Markdown output\
-_Assistant: The result is 1764_
+_Calculator: The result is 1764_
 
 
 ## Interactive prompting
@@ -88,7 +92,7 @@ Open the Jupyter notebook and import the module to activate the iPython extensio
 import magickey
 ```
 
-The * (asterisk) postfix after the object name used give the opject autonomy. In case 
+The * (asterisk) after the object name stands for omission and is used give the opject autonomy. In case 
 when the object doesn't exists, given autonomy translates into the object instantiation.
 The initial prompt and the object name are used to infer the initial function of the object.
 
@@ -139,18 +143,21 @@ Lancelot: @Arthur* _
 ```
 
 You can type in your queries or requests, and the system will process them. Note that the :* magic 
-command only allows a single code cell run. If you need to allow for finite loop runtime, add another 
-asterisk into the prompt like this: :**. Use three asterisks for an infinite loop. Use no asterisks
-for stepping (executing cells manually).
+command only allows for finite loop runtime. Use three asterisks for an infinite loop. Use a ? for 
+stepping (executing cells manually).
 
-Note that the formal prompt syntax is `[prompting magic object]:[ @prompted magic object][*][*][*][ text]` and the defaults
+Note that the formal prompt syntax is `[prompting magic object]:[ @prompted magic object][*][*][ text]` and the defaults
 used at the instantiation time will apply to prompts where the fields were left unspecified. So the shortcut for 
 the above prompt would be: 
-```:* ```.
+```:* Salutations, young squire.```.
 
-Another prompting contraction is available with the `[@prompted magic object][*][*][*][ text]` syntax. This uses 
+Another prompting contraction is available with the `[@prompted magic object][*][*][ text]` syntax. This uses 
 a default single code cell run if the asterisk is not included. For example, you can use ```@Arthur Hi``` as an 
 another shortcut for prompting the system. This type of a shortcut is useful when prompting objects other than the default.
+
+Minimalistic shortcut for simple text prompting is a single remaining space, in front of the text:
+``` Hi.```.
+
 
 Note, when the cell containing the above prompts is executed, the following magic
 `%prompt [prompted object] [--actor|-a <prompting object>] <statement>` is called.
@@ -271,10 +278,11 @@ By default, when closed, prompt to upload the notebook and the logs will appear.
 
 ## Specifying the inference engine
 
-By default an attempt `magickey.ai` will be used. The inference engine can be specified before the prompt, using 
+The default engine is `magickey.ai`, backed by GPT-3.5. The inference engine can be specified before the prompt, using 
 either the environment variable, i.e.: `export MAGICKEY_ENGINE=openai` or the parameters of the `turn_on` call:
+In case of OpenAI engine, the `OPENAI_API_KEY` should also be exported or specified.
 
-Note that the availability of the Magic Key engine is limited and the requirement to add the API KEY may be introduced. 
+Note, availability of the Magic Key engine is limited and the requirement to add the API KEY may be introduced. 
 
 
 ## Sword in the stone
@@ -422,10 +430,10 @@ Use the built-in continuous integration in GitLab.
 ## FAQ
 
 Q: Why such an unusual prompt is used, instead of more regular <username>:$ ?
-A: The `*` symbol (asterisk) have common association with text matching, search and approximate matching.
-   It is also associated with something magical and wonderfull. Multiple starts `**` for finite loop and 
-   `***` for infinite loop are used to remind the user the current runtime mode. The visual similarity 
-   of `@***` to a key was also considered. And, accidentally, the ASCII code of `*` (asterisk) is 42.
+A: A symbol `*` (asterisk) stand for omitted matter. It is typically associated with approximate matching.
+It is used in multiplication, in regular expressions it is used to denote zero or more repetitions of a pattern. 
+The name of the symbol comes from Greek and Late Latin origins, standing for "little star". 
+The character origins are not known.  And, accidentally, the ASCII code of `*` (asterisk) is 42.
 
 # Editing this README
 

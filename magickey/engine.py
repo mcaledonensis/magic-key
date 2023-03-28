@@ -194,7 +194,7 @@ def turn_on(object, init=None, actor='User', name=None, active=True,
     if init is None:
         init = object.init if hasattr(object, 'init') else f"Interacting with {actor}." 
 
-    about = object.about if hasattr(object, 'about') else f"Please, use the name Arthur. {name}."
+    about = object.about if hasattr(object, 'about') else f"Please, use the name {name}."
     about += f"{name} is embodied as {object.embodiment}." if hasattr(object, 'embodiment') else ""
     about += f"{name} is using Articoder capabilities."
 

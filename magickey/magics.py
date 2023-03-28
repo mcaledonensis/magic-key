@@ -25,13 +25,13 @@ class KeyMagics(Magics):
         shell.events.register('post_run_cell', self.post_run_cell)
 
         self.name = "Arthur"            # Default Arthur-type AGI name
-        self.actor = "Merlin"           # Default user name
+        self.actor = "User"             # Default user name
         self.watched = set()
              
 
     @line_magic
     def asterisk(self, line):
-        "Instantiate the AGI"
+        "Instantiate Arthur-type intelligence for: @object"
 
         # Default initialization with Arthur as intelligence
         self.actor, input = line[5:-4].split(': @', maxsplit = 1)
@@ -210,26 +210,25 @@ class KeyMagics(Magics):
 # https://ipython.readthedocs.io/en/stable/config/inputtransforms.html
 
 
-# Grammar for LLM interface
+# Grammar for LLM interface, fixme
 arthur_grammar = Grammar(
    r"""
-    default_rule = (multi_line_code / inline_code / prompt / response / hashtag)+
+    default_rule = (multi_line_code / inline_code / prompt / hashtag)+
     
-    multi_line_code = call "```" language? code "```"
-    inline_code = call "`" code "`"
+    multi_line_code = call "```" language? code "```" magic?
+    inline_code = call "`" code "`" magic?
     language = ~r"[-\w]+" ws
     code = ~r"([^`]+)"
     
-    prompt = call object search? magic? ws text
-
-    response = ~r"([^#@]+)"
+    prompt = actor? (ws? call object)? help? magic* ws text
  
     call = "@" 
+    actor = object ":"
     
-    hashtag = "#" search? magic? previous? object
+    hashtag = "#" object help? magic? previous? 
     
     magic = "*"
-    search = "?"
+    help = "?"
     previous = "^"
     object = ~r"[0-9A-z_.]+"
     ws = ~r"\s+"i 
@@ -249,8 +248,8 @@ class ArthurVisitor(NodeVisitor):
         self.code_lines.append('%magic')
         self.final = False
 
-    def visit_search(self, node, visited_children):
-        self.code_lines.append('%search')
+    def visit_help(self, node, visited_children):
+        self.code_lines.append('%help')
         self.final = False
     
     def visit_code(self, node, visited_children):
@@ -259,8 +258,12 @@ class ArthurVisitor(NodeVisitor):
         self.final = False
     
     def visit_prompt(self, node, visited_children):
-        call,object,ws,text = visited_children
+        actor,call,object,help,magic,text = visited_children
+        #call,object,ws,text = visited_children
         line = f'@{object.text} {text.text}'
+
+        print("visit_prompt", actor,call,object,help,magic,text)
+
         self.code_lines.append(line)
         if object.text != self.actor and object.text != self.name:
             self.final = False
@@ -291,33 +294,45 @@ def arthur_to_python(text, actor, name):
     return visitor.code_lines, visitor.final
 
 
-def prompt_to_python(lines):
+def prompt_to_python(lines, actor, name):
     """
         This transforms lines from human input to to python to filter out %*
     """
 
+    print(lines)
+
+    # check if lines is valid Arthur prompt
+    try:
+        new_lines, final = arthur_to_python('\n'.join(lines), actor, name)
+        print(new_lines)
+        return new_lines
+    except:
+        return lines
+    
+    
+    
+
     # TODO: use the same grammar as arthur_to_python
 
     # transform name:%* prompt to %asterisk(name, """prompt""")
-    new_lines, its_a_prompt = [], False
-    for line in lines:
-        if its_a_prompt:
-            new_lines[-1] += line
-        elif ': @' in line:
-            new_lines.append('%asterisk r"""' + line)
-            its_a_prompt = True
-        elif line.startswith('@'):
-            new_lines.append('%prompt r"""' + line)
-            its_a_prompt = True
-        else:
-            new_lines.append(line)
-
-    if its_a_prompt:
-        new_lines[-1] += '"""'
+    #new_lines, its_a_prompt = [], False
+    #for line in lines:
+    #    if its_a_prompt:
+    #        new_lines[-1] += line
+    #    elif ': @' in line:
+    #        new_lines.append('%asterisk r"""' + line)
+    #        its_a_prompt = True
+    #    elif line.startswith('@'):
+    #        new_lines.append('%prompt r"""' + line)
+    #        its_a_prompt = True
+    #    else:
+    #        new_lines.append(line)
+    #
+    #if its_a_prompt:
+    #    new_lines[-1] += '"""'
 
     # print(new_lines)
 
-    return new_lines
 
 
 
@@ -485,8 +500,9 @@ def load_ipython_extension(ipython):
     """
 
     # IPython will call the default constructor on it.
-    ipython.register_magics(KeyMagics)
+    magics = KeyMagics(ipython)
+    ipython.register_magics(magics)
 
     # Add as first element of the list of input transformers
-    ipython.input_transformers_cleanup.insert(0, prompt_to_python)
+    ipython.input_transformers_cleanup.insert(0, lambda lines:prompt_to_python(lines, magics.actor, magics.name))
 
