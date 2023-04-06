@@ -13,7 +13,7 @@ from parsimonious.grammar import Grammar
 
 import openai, os, getpass, json
 from notebook.utils import to_api_path
-from .engine import on, turn_on, prompt, name_to_object
+from .engine import on, turn_on, prompt, name_to_object, name_to_actor
 
 @magics_class
 class KeyMagics(Magics):
@@ -26,7 +26,7 @@ class KeyMagics(Magics):
 
         self.name = "Arthur"            # Default Arthur-type AGI name
         self.actor = "User"             # Default user name
-        self.watched = set()
+        self.watched = {}
              
 
     @line_magic
@@ -51,43 +51,42 @@ class KeyMagics(Magics):
     @line_magic
     def prompt(self, line):
         "Identifies and executes the prompt for: @object prompt"
-        name, input = line[5:-4].split(maxsplit = 1)      # @object Prompt 
+        from_, to, content = line.split(maxsplit = 2)      # @object Prompt 
+        #print(from_)
+        #print(to)
+        #print(content)
         # execute object.prompt(text) and return the result    
 
-        object = name_to_object(name)
-        if object:
+        from_object = name_to_object(from_)
+        to_object = name_to_object(to)
+        if from_object and to_object:
             # TODO: should we actually be using jupyter_client?
-            request, response = prompt(object, input, actor = self.actor)
+            code = prompt(from_object, to_object, content)
+            if code:
+                add_code_cell(code, execute = False)
+                self.watched[self.shell.execution_count] = from_object
+            #print(response, from_, to)
 
-            # TODO: correct the actor name
-            lines,final = arthur_to_python(response, self.actor, name)
-
-            # format the results as ChartML
-            chatml = ""
-            for entry in request:
-                optional_name_field = f" name={entry['name']}" if 'name' in entry else ""
-                chatml += f"<|im_start|>{entry['role']}{optional_name_field}\n{entry['content']}\n<|im_end|>\n"
-
-            code = ("```python\n" if not final else "```\n") + "\n".join(lines) + "\n```"
-            return Markdown("\n\n".join([code, chatml]))
+            #if request:
+            #    # format the results as ChatML
+            #    chatml = ""
+            #    for entry in request:
+            #        optional_name_field = f" name={entry['name']}" if 'name' in entry else ""
+            #        chatml += f"<|im_start|>{entry['role']}{optional_name_field}\n{entry['content']}\n<|im_end|>\n"
+            #
+            #    return Markdown(chatml)
         
-        elif name == self.actor:
-            return Markdown(input)
+        elif not from_object:
+            raise ValueError(f"Unknown prompt source {from_}. Suggestion: check %who or use Python syntax to call the object directly.")
         else:
-            raise ValueError(f"Unknown prompt target @{name}. Suggestion: check %who or use Python syntax to call the object directly.")
+            raise ValueError(f"Unknown prompt target {to}. Suggestion: check %who or use Python syntax to call the object directly.")
 
+        # return Markdown(input)
 
     def post_run_cell(self, result):
-        if isinstance(result.result, Markdown):
-            if result.result.data.startswith('```python\n'):
-                code = result.result.data.split('\n```', maxsplit = 1)[0][10:]
-                self.watched.add(result.execution_count + 1)
-                add_code_cell(code, execute = True)
-            elif result.result.data.startswith('```\n'):        # This is a hack to handle the final output prompt
-                code = result.result.data.split('\n```', maxsplit = 1)[0][4:]
-                add_code_cell(code, execute = True)
+        pass
 
-
+    def post_run_cell(self, result):
         if result.execution_count in self.watched:
             self.watched.remove(result.execution_count)
 
@@ -108,7 +107,7 @@ class KeyMagics(Magics):
                 formatted_cell += f'\n{error_type}: {result.error_before_exec.msg} in {result.error_before_exec.text}'
                         
             code = f"@{self.name}\n" + formatted_cell
-            add_code_cell(code, execute = True)
+            add_code_cell(code, execute = False)
 
 
 
@@ -210,128 +209,98 @@ class KeyMagics(Magics):
 # https://ipython.readthedocs.io/en/stable/config/inputtransforms.html
 
 
-# Grammar for LLM interface, fixme
+# Grammar for LLM interface, FIXME: content can contain ':' for now
 arthur_grammar = Grammar(
    r"""
-    default_rule = (multi_line_code / inline_code / prompt / hashtag)+
+    default_rule = (ws / multi_line_code / inline_code / prompt / hashtag)+
     
-    multi_line_code = call "```" language? code "```" magic?
-    inline_code = call "`" code "`" magic?
-    language = ~r"[-\w]+" ws
+    multi_line_code = call "```" python? code "```" asterisk?
+    inline_code = call "`" code "`" asterisk?
+    python = "python" ws
     code = ~r"([^`]+)"
     
-    prompt = actor? (ws? call object)? help? magic* ws text
+    prompt = from? to? help? asterisk* ws content
  
     call = "@" 
-    actor = object ":"
+    from = object ":"
+    to = ws? call object
     
-    hashtag = "#" object help? magic? previous? 
+    hashtag = "#" object help? asterisk? previous? 
     
-    magic = "*"
+    asterisk = "*"
     help = "?"
     previous = "^"
     object = ~r"[0-9A-z_.]+"
     ws = ~r"\s+"i 
 
-    text = ~r"([^#@]+)"
+    content = ~r"([^#@]+)"
     """
 )
 
 class ArthurVisitor(NodeVisitor):
-    def __init__(self, actor, name = 'Arthur'):
+    def __init__(self):
         self.code_lines = []
-        self.actor = actor
-        self.name = name
-        self.final = True
                 
-    def visit_magic(self, node, visited_children):
-        self.code_lines.append('%magic')
-        self.final = False
+    def visit_asterisk(self, node, visited_children):
+        pass
 
     def visit_help(self, node, visited_children):
-        self.code_lines.append('%help')
-        self.final = False
+        pass
     
     def visit_code(self, node, visited_children):
         # ast.parse(node.text.split("\n"))
-        self.code_lines.extend(node.text.split("\n"))    
-        self.final = False
+        self.code_lines.extend([line + '\n' for line in node.text.split('\n')])
     
     def visit_prompt(self, node, visited_children):
-        actor,call,object,help,magic,text = visited_children
-        #call,object,ws,text = visited_children
-        line = f'@{object.text} {text.text}'
+        from_,to,help,asterisk,_,content = visited_children
 
-        print("visit_prompt", actor,call,object,help,magic,text)
+        declared = lambda x: x.children
 
-        self.code_lines.append(line)
-        if object.text != self.actor and object.text != self.name:
-            self.final = False
+        if not declared(from_) and not declared(to):
+            raise Exception("Prompt must have a From: or @To.")            
 
-    def visit_response(self, node, visited_children):
-        text = node.text.strip()
-        if text:
-            self.code_lines.append(f'%prompt {self.actor} -a {self.name} r"""{node.text}"""')
+        # Initialize from_object and to_object
+        if declared(from_):
+            from_object = from_.children[0].text[:-1]
+
+        if declared(to):
+            _,call,object = to.children[0]
+            to_object = object.text
+
+        # Fill in the defaults, if not available
+        if not declared(from_):
+            from_object = name_to_actor(to_object)
+
+        if not declared(to):
+            to_object = name_to_actor(from_object)
+
+        line = f'%prompt {from_object} {to_object} {content.text}'
+        self.code_lines.append(line + '\n')
 
     def visit_hashtag(self, node, visited_children):
-        self.code_lines.append('%hashtag ' + node.text)   
+        self.code_lines.append('%hashtag ' + node.text + '\n')   
         
     def generic_visit(self, node, visited_children):
         """ The generic visit method. """
-        return visited_children or node
+        return node # visited_children or node
 
 
-def arthur_to_python(text, actor, name):
+def arthur_to_python(lines):
     """
         This transforms lines from @```python.code()``` to python.code()
         and from @object Prompt to %prompt object.__prompt__("Prompt").
         This also processes #hastag tags, replacing it with %memory
     """
 
-    tree = arthur_grammar.parse(text)
-    visitor = ArthurVisitor(actor, name)
-    visitor.visit(tree)
-    return visitor.code_lines, visitor.final
-
-
-def prompt_to_python(lines, actor, name):
-    """
-        This transforms lines from human input to to python to filter out %*
-    """
-
-    print(lines)
-
     # check if lines is valid Arthur prompt
     try:
-        new_lines, final = arthur_to_python('\n'.join(lines), actor, name)
-        print(new_lines)
-        return new_lines
+        tree = arthur_grammar.parse('\n'.join(lines))
+        visitor = ArthurVisitor()
+        visitor.visit(tree)
+        return visitor.code_lines
     except:
         return lines
-    
-    
-    
 
-    # TODO: use the same grammar as arthur_to_python
-
-    # transform name:%* prompt to %asterisk(name, """prompt""")
-    #new_lines, its_a_prompt = [], False
-    #for line in lines:
-    #    if its_a_prompt:
-    #        new_lines[-1] += line
-    #    elif ': @' in line:
-    #        new_lines.append('%asterisk r"""' + line)
-    #        its_a_prompt = True
-    #    elif line.startswith('@'):
-    #        new_lines.append('%prompt r"""' + line)
-    #        its_a_prompt = True
-    #    else:
-    #        new_lines.append(line)
-    #
-    #if its_a_prompt:
-    #    new_lines[-1] += '"""'
-
-    # print(new_lines)
 
 
 
@@ -463,30 +432,6 @@ def post_save(model, os_path, contents_manager):
 
 
 
-class CellWatcher(object):
-    def __init__(self, ipython):
-        self.ipython = ipython
-        self.watched = set()
-
-
-
-
-            
-
-
-
-            # print('result.execution_count = ', result.execution_count)
-            # print('result.error_before_exec = ', result.error_before_exec)
-            # print('result.error_in_exec = ', result.error_in_exec)
-            # print('result.info = ', result.info)
-            # print('result.result = ', result.result)
-
-
-
-
-        pass
-
-
 
 
 
@@ -504,5 +449,5 @@ def load_ipython_extension(ipython):
     ipython.register_magics(magics)
 
     # Add as first element of the list of input transformers
-    ipython.input_transformers_cleanup.insert(0, lambda lines:prompt_to_python(lines, magics.actor, magics.name))
+    ipython.input_transformers_cleanup.insert(0, arthur_to_python)
 

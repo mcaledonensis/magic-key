@@ -105,9 +105,21 @@ class EngineEcho:
     def __init__(self, api_key = None):
         pass
 
-    def prompt(self, prompt, actors):
-        import re
-        return re.split('|'.join([actor + ': ' for actor in actors]), prompt)[-2].strip()
+    def prompt(self, messages, actors):
+        messages[-1]['content'] = messages[-2]['content']
+        return messages[-1]['content']
+
+
+class EnginePrint:
+    def __init__(self, api_key = None):
+        pass
+
+
+    def prompt(self, messages, actors):
+        # remove all elements from the list except the last one
+        messages[-1]['content'] = messages[-2]['content']
+        del messages[:-1]
+        return messages[-1]['content']
 
 
 class NoMagic:
@@ -125,27 +137,32 @@ class TrueMagic:
 
 
 
-def prompt(object, input, actor = None):
+def prompt(from_object, to_object, content):
     """ Executes the prompt and returns the result. """
 
-    if id(object) not in magic_objects:
-        raise ValueError("Magic key is not turned on for this object.")
+    # If object implements the prompt method, use it
+    if hasattr(to_object, 'prompt'):
+        return to_object.prompt(content, from_object)
 
-    I = magic_objects[id(object)]
+    # Attempt to use the magickey engine to execute the prompt
+    if id(from_object) not in magic_objects:
+        raise ValueError(f"Magic key is not turned on for {from_object}.")
+
+    if id(to_object) not in magic_objects:
+        raise ValueError(f"Magic key is not turned on for {to_object}.")
+
+
+    From = magic_objects[id(from_object)]
+    To = magic_objects[id(to_object)]
 
     # Keeps track of the actors, so that the LLM can stop at the right place
-    actors = [I.actor, I.name, 'iPython']
-    if actor is not None:
-        actors.append(actor)
-        I.actor = actor
-    else:
-        actor = I.actor
+    actors = [From.name, To.name, 'iPython']
 
-    I.messages.append({'role': 'user', 'content': input, 'name': actor})
-    I.messages.append({'role': 'assistant', 'name': I.name, 'content': ''})
-    result = I.engine.prompt(I.messages, actors)
-    I.messages[-1]['content'] = result
-    return I.messages, result
+    To.messages.append({'role': 'user', 'content': content, 'name': From.name})
+    To.messages.append({'role': 'assistant', 'name': To.name, 'content': ''})
+    result = To.engine.prompt(To.messages, actors)
+    To.messages[-1]['content'] = result
+    return result
 
 
 def on(object):
@@ -156,7 +173,21 @@ def name_to_object(name):
     """ Returns the object with the given name. Returns None if the object is not registered. """
     return object_names.get(name, None)
 
-def turn_on(object, init=None, actor='User', name=None, active=True,
+def name_to_actor(name):
+    """ Returns the actor name."""
+    object = name_to_object(name)
+    if id(object) not in magic_objects:
+        raise ValueError(f"Magic key is not turned on for {object}.")
+    
+    actor = magic_objects[id(object)].actor
+
+    if id(actor) not in magic_objects:
+        raise ValueError(f"Magic key is not turned on for {actor}.")
+
+    return magic_objects[id(actor)].name
+
+
+def turn_on(object, init=None, actor=None, name=None, active=True,
             steps=None, engine='openai', api_key=None, auto_prompt=False, magic_type=True):
     """
     Activates the connector between the python interpreter and intellegence engine.
@@ -192,7 +223,7 @@ def turn_on(object, init=None, actor='User', name=None, active=True,
         raise ValueError("The object name is already registered.")
 
     if init is None:
-        init = object.init if hasattr(object, 'init') else f"Interacting with {actor}." 
+        init = object.init if hasattr(object, 'init') else f"Interacting with {actor.name}." 
 
     about = object.about if hasattr(object, 'about') else f"Please, use the name {name}."
     about += f"{name} is embodied as {object.embodiment}." if hasattr(object, 'embodiment') else ""
@@ -224,6 +255,8 @@ def turn_on(object, init=None, actor='User', name=None, active=True,
         I.engine = EngineOpenAI(api_key)
     elif engine == 'echo':
         I.engine = EngineEcho(api_key)
+    elif engine == 'print':
+        I.engine = EnginePrint(api_key)
     else:
         raise ValueError(f"Unknown engine: {engine}")
 

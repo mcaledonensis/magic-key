@@ -162,6 +162,22 @@ Minimalistic shortcut for simple text prompting is a single remaining space, in 
 Note, when the cell containing the above prompts is executed, the following magic
 `%prompt [prompted object] [--actor|-a <prompting object>] <statement>` is called.
 
+## Noninteractive
+
+Integration into regular non-interactive Python is also available via decorators
+
+
+```
+import magickey
+
+@magickey.object
+class Calculator:
+    name = 'Calculator'
+    init = 'A precise Calculator that always uses numpy.'
+```
+
+
+
 
 ## Adding your own classes
 
